@@ -48,8 +48,11 @@ impl StorageBackend<Thing> for SurrealDb {
         let tasks: Vec<Task<Thing>> = self.rt.block_on(
             self.db.select("Tasks").into_future()
         ).context("Reading records")?;
-        task.name = "Hardcoded".into();
-        task.id = tasks[0].id.clone();
+        if let Some(last_task) = tasks.last() {
+            task.name = last_task.name.clone();
+            task.id = last_task.id.clone();
+            task.description = last_task.description.clone();
+        }
         Ok(())
     }
 }
