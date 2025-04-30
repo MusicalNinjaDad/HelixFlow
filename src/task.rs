@@ -6,13 +6,13 @@ use anyhow::{Ok, Result};
 
 /// A Task
 #[allow(dead_code)]
-struct Task {
+struct Task<ID> {
     name: Cow<'static, str>,
-    id: Option<u32>,
+    id: Option<ID>,
     description: Option<Cow<'static, str>>,
 }
 
-impl Task {
+impl Task<u32> {
     /// Create a new task in the selected storage backend.
     /// Returned Result should include the task ID.
     #[allow(dead_code)]
@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn test_new_task() {
-        let mut new_task: Task = Task {
+        let mut new_task = Task {
             name: "Test Task 1".into(),
             id: None,
             description: None,
