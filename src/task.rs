@@ -20,11 +20,11 @@ trait StorageBackend<ID> {
     fn create(&self, task: &mut Task<ID>) -> Result<()>;
 }
 
-impl Task<u32> {
+impl<ID> Task<ID> {
     /// Create a new task in the selected storage backend.
     /// Returned Result should include the task ID.
     #[allow(dead_code)]
-    fn create<B: StorageBackend<u32>>(&mut self, backend: &B) -> Result<()> {
+    fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
         backend.create(self)?;
         Ok(())
     }
