@@ -35,8 +35,12 @@ struct TestBackend;
 
 impl StorageBackend<u32> for TestBackend {
     fn create(&self, task: &mut Task<u32>) -> Result<()> {
-        task.id = Some(1);
-        Ok(())
+        match task.name {
+            _ => {
+                task.id = Some(1);
+                Ok(())
+            }
+        }
     }
 }
 
