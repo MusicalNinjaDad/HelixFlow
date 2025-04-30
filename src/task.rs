@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-use anyhow::{Ok, Result, anyhow};
+use anyhow::{Ok, Result};
 
 /// A Task
 #[allow(dead_code)]
@@ -30,24 +30,24 @@ impl Task<u32> {
     }
 }
 
-#[allow(dead_code)]
-struct TestBackend;
-
-impl StorageBackend<u32> for TestBackend {
-    fn create(&self, task: &mut Task<u32>) -> Result<()> {
-        match task.name {
-            Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
-            _ => {
-                task.id = Some(1);
-                Ok(())
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::anyhow;
+
+    struct TestBackend;
+
+    impl StorageBackend<u32> for TestBackend {
+        fn create(&self, task: &mut Task<u32>) -> Result<()> {
+            match task.name {
+                Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
+                _ => {
+                    task.id = Some(1);
+                    Ok(())
+                }
+            }
+        }
+    }
 
     #[test]
     fn test_new_task() {
