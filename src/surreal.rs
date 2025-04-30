@@ -1,59 +1,25 @@
 use anyhow::{Context, Ok};
-use surrealdb::{
-    Surreal,
-    engine::remote::ws::{Client, Ws},
-    opt::auth::Root,
-    sql::Thing,
-};
+use surrealdb::{Connection, Surreal, sql::Thing};
 
 use tokio::runtime::Runtime;
 
 use crate::task::{StorageBackend, Task};
 
 /// A blocking instance of a SurrealDb
-struct SurrealDb {
+#[allow(dead_code)]
+struct SurrealDb<C: Connection> {
     /// The async surrealdb Client
-    db: Surreal<Client>,
+    db: Surreal<C>,
 
     /// A `current_thread` `tokio::Runtime`
     rt: Runtime,
 }
 
-impl SurrealDb {
-    fn connect() -> anyhow::Result<Self> {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .context("Creating Tokio Runtime")?;
-
-        let db = rt
-            .block_on(Surreal::new::<Ws>("localhost:8000").into_future())
-            .context("Initialising database connection")?;
-        rt.block_on(
-            db.signin(Root {
-                username: "root",
-                password: "root",
-            })
-            .into_future(),
-        )
-        .context("Signing in to database")?;
-        rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
-            .context("Selecting database namespace")?;
-
-        Ok(Self { db, rt })
-    }
-}
-
-impl StorageBackend<Thing> for SurrealDb {
+impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
     fn create(&self, task: &mut Task<Thing>) -> anyhow::Result<()> {
         let dbtask: Task<Thing> = self
             .rt
-            .block_on(
-                self.db
-                    .create("Tasks")
-                    .content(task.clone())
-                    .into_future(),
-            )
+            .block_on(self.db.create("Tasks").content(task.clone()).into_future())
             .unwrap()
             .context("Creating new record")?;
         task.id = dbtask.id;
@@ -64,6 +30,24 @@ impl StorageBackend<Thing> for SurrealDb {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use surrealdb::engine::local::{Db, Mem};
+
+    impl SurrealDb<Db> {
+        fn connect() -> anyhow::Result<Self> {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .context("Creating Tokio Runtime")?;
+
+            let db = rt
+                .block_on(Surreal::new::<Mem>(()).into_future())
+                .context("Initialising database connection")?;
+            rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
+                .context("Selecting database namespace")?;
+
+            Ok(Self { db, rt })
+        }
+    }
 
     #[test]
     fn test_new_task_id_updated() {

@@ -10,9 +10,9 @@
         "RUSTC_BOOTSTRAP": "1"
     },
 
-    "onCreateCommand": "mkdir --parents logs/surrealdb && logrotate -v .devcontainer/logrotate.conf -s logs/logrotate.status",
+    // "onCreateCommand": "mkdir --parents logs/surrealdb && logrotate -v .devcontainer/logrotate.conf -s logs/logrotate.status",
 
-    "postStartCommand": "surreal start --log debug --user root --pass root memory | tee logs/surrealdb/server.log",
+    // "postStartCommand": "surreal start --log debug --user root --pass root memory | tee logs/surrealdb/server.log",
 
     "customizations": {
         "vscode": {
