@@ -1,8 +1,8 @@
 //! The fundamental `Task` building block and related functions.
 
-use std::borrow::Cow;
-use serde::{Deserialize, Serialize};
 use anyhow::{Ok, Result};
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 /// A Task
 #[derive(Serialize, Deserialize)]
