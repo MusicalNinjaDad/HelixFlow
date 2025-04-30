@@ -22,7 +22,9 @@
                 "charliermarsh.ruff",
                 // configs, docs, etc.
                 "DavidAnson.vscode-markdownlint",
-                "tamasfe.even-better-toml"
+                "tamasfe.even-better-toml",
+                // Docker (for devcontainer DockerFile)
+                "ms-azuretools.vscode-containers"
             ],
             "settings": {
                 // rust
