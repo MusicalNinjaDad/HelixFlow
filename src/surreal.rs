@@ -1,7 +1,5 @@
-use std::sync::LazyLock;
-
 use anyhow::{Context, Ok};
-use surrealdb::{engine::remote::ws::{Client, Ws}, opt::auth::Root, Object, Surreal, sql::Thing};
+use surrealdb::{engine::remote::ws::{Client, Ws}, opt::auth::Root, Surreal, sql::Thing};
 
 use tokio::runtime::Runtime;
 
@@ -9,43 +7,46 @@ use crate::task::{StorageBackend, Task};
 
 /// A blocking instance of a SurrealDb
 struct SurrealDb
-// {
-//     /// The async surrealdb Client
-//     inner: Client,
+{
+    /// The async surrealdb Client
+    db: Surreal<Client>,
 
-//     /// A `current_thread` `tokio::Runtime`
-//     rt: Runtime,
-// }
+    /// A `current_thread` `tokio::Runtime`
+    rt: Runtime,
+}
 
-// impl SurrealDb {
-//     fn connect() -> anyhow::Result<Self> {
-//         let rt = tokio::runtime::Builder::new_current_thread()
-//         .enable_all()
-//         .build()?;
+impl SurrealDb {
+    fn connect() -> anyhow::Result<Self> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .context("Creating Tokio Runtime")?;
         
-//         let inner = ;
-        
-
-//     }
-// }
-;
-
-impl StorageBackend<Thing> for SurrealDb {
-    fn create(&self, task: &mut Task<Thing>) -> anyhow::Result<()> {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().context("Creating Tokio Runtime")?;
-        let db =  rt.block_on(Surreal::new::<Ws>("localhost:8000").into_future()).context("Initialising database connection")?;
+        let db = rt.block_on(Surreal::new::<Ws>("localhost:8000").into_future()).context("Initialising database connection")?;
         rt.block_on(db.signin(Root{
             username: "root",
             password: "root",
         }).into_future()).context("Signing in to database")?;
         rt.block_on(db.use_ns("namespace").use_db("database").into_future()).context("Selecting database namespace")?;
-        let _: Option<Task<Thing>> = rt.block_on(db.create("Tasks").content(Task::<Thing>{
+        
+        Ok(Self {
+            db,
+            rt
+        })
+
+    }
+}
+
+
+impl StorageBackend<Thing> for SurrealDb {
+    fn create(&self, task: &mut Task<Thing>) -> anyhow::Result<()> {
+        let _: Option<Task<Thing>> = self.rt.block_on(self.db.create("Tasks").content(Task::<Thing>{
             name: "Hardcoded".into(),
             id: None,
             description: None}
         ).into_future()).context("Creating new record")?;
-        let tasks: Vec<Task<Thing>> = rt.block_on(
-            db.select("Tasks").into_future()
+        let tasks: Vec<Task<Thing>> = self.rt.block_on(
+            self.db.select("Tasks").into_future()
         ).context("Reading records")?;
         task.name = "Hardcoded".into();
         task.id = tasks[1].id.clone();
@@ -65,7 +66,7 @@ mod tests {
                 id: None,
                 description: None,
             };
-            let backend = SurrealDb;
+            let backend = SurrealDb::connect().unwrap();
             let created = new_task.create(&backend);
             if let Err(e) = created {dbg!("Error: {}", e);};
             assert_eq!(new_task.name, "Hardcoded");
