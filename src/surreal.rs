@@ -79,14 +79,11 @@ mod tests {
             };
             let backend = SurrealDb::connect().unwrap();
             new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
-            assert!(new_task.id != None);
-            // Get the record from the db by ID and check the contents
-            if let Some(id) = new_task.id {
-                let stored_task: Task<Thing> = backend.rt.block_on(
-                    backend.db.select((id.tb.clone(), id.id.to_raw())).into_future()).unwrap().unwrap();
-                assert_eq!(stored_task.name, new_task.name);
-                assert_eq!(stored_task.description, new_task.description);
-            };
+            let id = new_task.id.unwrap();
+            let stored_task: Task<Thing> = backend.rt.block_on(
+                backend.db.select((id.tb.clone(), id.id.to_raw())).into_future()).unwrap().unwrap();
+            assert_eq!(stored_task.name, new_task.name);
+            assert_eq!(stored_task.description, new_task.description);
         }
     }
 }
