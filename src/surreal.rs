@@ -51,11 +51,7 @@ impl StorageBackend<Thing> for SurrealDb {
             .block_on(
                 self.db
                     .create("Tasks")
-                    .content(Task::<Thing> {
-                        name: "Hardcoded".into(),
-                        id: None,
-                        description: None,
-                    })
+                    .content(task.clone())
                     .into_future(),
             )
             .unwrap()
