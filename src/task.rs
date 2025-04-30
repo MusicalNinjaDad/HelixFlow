@@ -12,13 +12,31 @@ struct Task<ID> {
     description: Option<Cow<'static, str>>,
 }
 
+/// Provide an implementation of a storage backend.
+trait StorageBackend<ID> {
+    /// Create a new task in the selected storage backend.
+    /// Returned Result should include the task ID.
+    #[allow(dead_code)]
+    fn create(&self, task: &mut Task<ID>) -> Result<()>;
+}
+
 impl Task<u32> {
     /// Create a new task in the selected storage backend.
     /// Returned Result should include the task ID.
     #[allow(dead_code)]
-    fn create(&mut self) -> Result<&mut Self> {
-        self.id = Some(1);
-        Ok(self)
+    fn create<B: StorageBackend<u32>>(&mut self, backend: &B) -> Result<()> {
+        backend.create(self)?;
+        Ok(())
+    }
+}
+
+#[allow(dead_code)]
+struct TestBackend;
+
+impl StorageBackend<u32> for TestBackend {
+    fn create(&self, task: &mut Task<u32>) -> Result<()> {
+        task.id = Some(1);
+        Ok(())
     }
 }
 
@@ -33,7 +51,8 @@ mod tests {
             id: None,
             description: None,
         };
-        let _ = new_task.create();
+        let backend = TestBackend;
+        let _ = new_task.create(&backend);
         assert_eq!(new_task.name, "Test Task 1");
         assert_eq!(new_task.description, None);
         assert_eq!(new_task.id, Some(1));
