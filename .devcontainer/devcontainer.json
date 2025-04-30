@@ -3,6 +3,12 @@
         "dockerfile": "Dockerfile"
     },
 
+    "remoteEnv": {
+        "CARGO_INCREMENTAL": "1",
+        // https://github.com/rust-lang/rust-analyzer/issues/17149
+        "RUSTC_BOOTSTRAP": "1"
+    },
+
     "customizations": {
         "vscode": {
             "extensions": [
