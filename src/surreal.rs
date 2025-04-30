@@ -27,7 +27,7 @@ impl SurrealDb {
             username: "root",
             password: "root",
         }).into_future()).context("Signing in to database")?;
-        rt.block_on(db.use_ns("namespace").use_db("database").into_future()).context("Selecting database namespace")?;
+        rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future()).context("Selecting database namespace")?;
         
         Ok(Self {
             db,
@@ -49,7 +49,7 @@ impl StorageBackend<Thing> for SurrealDb {
             self.db.select("Tasks").into_future()
         ).context("Reading records")?;
         task.name = "Hardcoded".into();
-        task.id = tasks[1].id.clone();
+        task.id = tasks[0].id.clone();
         Ok(())
     }
 }
