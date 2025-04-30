@@ -14,15 +14,15 @@ struct Task<ID> {
 
 /// Provide an implementation of a storage backend.
 trait StorageBackend<ID> {
-    /// Create a new task in the selected storage backend.
-    /// Returned Result should include the task ID.
+    /// Create a new task.
+    /// Creation should update the Task.id before returning Ok(()).
     #[allow(dead_code)]
     fn create(&self, task: &mut Task<ID>) -> Result<()>;
 }
 
 impl<ID> Task<ID> {
-    /// Create a new task in the selected storage backend.
-    /// Returned Result should include the task ID.
+    /// Create this task in a given storage backend.
+    /// `&mut` because the creation process will update the `Task.id`
     #[allow(dead_code)]
     fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
         backend.create(self)?;
