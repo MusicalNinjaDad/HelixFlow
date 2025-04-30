@@ -40,19 +40,12 @@ impl SurrealDb {
 
 impl StorageBackend<Thing> for SurrealDb {
     fn create(&self, task: &mut Task<Thing>) -> anyhow::Result<()> {
-        let _: Option<Task<Thing>> = self.rt.block_on(self.db.create("Tasks").content(Task::<Thing>{
+        let dbtask: Task<Thing> = self.rt.block_on(self.db.create("Tasks").content(Task::<Thing>{
             name: "Hardcoded".into(),
             id: None,
             description: None}
-        ).into_future()).context("Creating new record")?;
-        let tasks: Vec<Task<Thing>> = self.rt.block_on(
-            self.db.select("Tasks").into_future()
-        ).context("Reading records")?;
-        if let Some(last_task) = tasks.last() {
-            task.name = last_task.name.clone();
-            task.id = last_task.id.clone();
-            task.description = last_task.description.clone();
-        }
+        ).into_future()).unwrap().context("Creating new record")?;
+        task.id = dbtask.id;
         Ok(())
     }
 }
@@ -72,7 +65,7 @@ mod tests {
             let backend = SurrealDb::connect().unwrap();
             let created = new_task.create(&backend);
             if let Err(e) = created {dbg!("Error: {}", e);};
-            assert_eq!(new_task.name, "Hardcoded");
+            assert_eq!(new_task.name, "Test Task 1");
             assert_eq!(new_task.description, None);
             assert!(new_task.id != None);
         }
