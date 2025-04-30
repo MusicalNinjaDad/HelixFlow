@@ -55,7 +55,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_new_task() {
+    fn test_new_task_id_updated() {
         {
             let mut new_task = Task {
                 name: "Test Task 1".into(),
@@ -63,11 +63,30 @@ mod tests {
                 description: None,
             };
             let backend = SurrealDb::connect().unwrap();
-            let created = new_task.create(&backend);
-            if let Err(e) = created {dbg!("Error: {}", e);};
+            new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
             assert_eq!(new_task.name, "Test Task 1");
             assert_eq!(new_task.description, None);
             assert!(new_task.id != None);
+        }
+    }
+    #[test]
+    fn test_new_task_written_to_db() {
+        {
+            let mut new_task = Task {
+                name: "Test Task 2".into(),
+                id: None,
+                description: None,
+            };
+            let backend = SurrealDb::connect().unwrap();
+            new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
+            assert!(new_task.id != None);
+            // Get the record from the db by ID and check the contents
+            if let Some(id) = new_task.id {
+                let stored_task: Task<Thing> = backend.rt.block_on(
+                    backend.db.select((id.tb.clone(), id.id.to_raw())).into_future()).unwrap().unwrap();
+                assert_eq!(stored_task.name, new_task.name);
+                assert_eq!(stored_task.description, new_task.description);
+            };
         }
     }
 }
