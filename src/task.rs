@@ -1,19 +1,19 @@
 //! The fundamental `Task` building block and related functions.
 
 use std::borrow::Cow;
-
+use serde::{Deserialize, Serialize};
 use anyhow::{Ok, Result};
 
 /// A Task
-#[allow(dead_code)]
-struct Task<ID> {
-    name: Cow<'static, str>,
-    id: Option<ID>,
-    description: Option<Cow<'static, str>>,
+#[derive(Serialize, Deserialize)]
+pub(crate) struct Task<ID> {
+    pub name: Cow<'static, str>,
+    pub id: Option<ID>,
+    pub description: Option<Cow<'static, str>>,
 }
 
 /// Provide an implementation of a storage backend.
-trait StorageBackend<ID> {
+pub(crate) trait StorageBackend<ID> {
     /// Create a new task.
     /// Creation should update the Task.id before returning Ok(()).
     #[allow(dead_code)]
@@ -24,7 +24,7 @@ impl<ID> Task<ID> {
     /// Create this task in a given storage backend.
     /// `&mut` because the creation process will update the `Task.id`
     #[allow(dead_code)]
-    fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
+    pub(crate) fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
         backend.create(self)?;
         Ok(())
     }

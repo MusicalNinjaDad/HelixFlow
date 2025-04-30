@@ -52,16 +52,11 @@ RUN dnf -y install \
     just \
     which
 
-# Python
-RUN dnf -y install \
-    python
-
-# Rust (and python headers)
+# Rust
 # and chown CARGO_HOME and RUSTUP_HOME to the default user 
 RUN dnf -y install \
     clang \
     mold \
-    python3-devel \
     rustup \
 && rustup-init -v -y \
 && rustup component add \
@@ -79,18 +74,13 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
 RUN chmod -R a+rwX ${CARGO_HOME} \
 && chmod -R a+rwX ${RUSTUP_HOME}
 
-# install uv and nbstripout
-COPY --from=ghcr.io/astral-sh/uv:0.6.17 /uv /uvx /bin/
-
-# nbstripout - git diff & strip handling for jupyter metadata. (Needs to be activated in workspace)
-RUN uv pip install --system nbstripout
+# Install SurrealDb
+RUN curl -sSf https://install.surrealdb.com | sh \
+&& dnf -y install logrotate
 
 # ---
 # Final setup steps
 # ---
-
-# Set uv cache to inside workspace (allowing for hardlinking & explicit rentention management via uv)
-ENV UV_CACHE_DIR=.uv_cache
 
 # Set the default user
 USER ${USERNAME}
