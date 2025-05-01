@@ -23,7 +23,7 @@ impl<ID> Task<ID> {
     /// Create this task in a given storage backend.
     /// `&mut` because the creation process will update the `Task.id`
     ///
-    /// Don't forget to check for and handle any `Error`s, even though you don't need the `Ok`.
+    /// Don't forget to check for, and handle, any `Error`s, even though you don't need the `Ok`.
     #[allow(dead_code)]
     pub(crate) async fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
         backend.create(self).await?;
