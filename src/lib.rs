@@ -5,3 +5,6 @@ mod backends {
     mod surreal;
 }
 mod task;
+mod ui {
+    mod slint;
+}

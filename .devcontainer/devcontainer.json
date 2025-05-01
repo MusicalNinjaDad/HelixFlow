@@ -21,10 +21,8 @@
                 "rust-lang.rust-analyzer",
                 "andrewbrey.rust-test-highlight",
                 "fill-labs.dependi",
-                // python
-                "ms-python.python",
-                "ms-python.vscode-pylance",
-                "charliermarsh.ruff",
+                // slint (UI)
+                "Slint.slint",
                 // configs, docs, etc.
                 "DavidAnson.vscode-markdownlint",
                 "tamasfe.even-better-toml",
