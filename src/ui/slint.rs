@@ -9,9 +9,12 @@ slint! {
             }
             id := Text {
                 text: "None";
+                accessible_label: "Task ID";
+                accessible_value: self.text;
             }
             Button {
                 text: "Create";
+                clicked() => { id.text = "1"; }
             }
         }
     }
@@ -47,5 +50,37 @@ mod test {
         assert_eq!(inputboxes.len(), 1);
         let task_name = &inputboxes[0];
         assert_eq!(task_name.accessible_value().unwrap().as_str(), "Task name");
+    }
+
+    #[test]
+    fn test_button_click() {
+        init_no_event_loop();
+        let helixflow = HelixFlow::new().unwrap();
+        
+        let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
+        for (i, element) in all_elements.iter().enumerate() {
+            let type_name = element.clone().type_name();
+            let label = element.clone().accessible_label().unwrap_or_else(|| "<no label>".into());
+            let value = element.clone().accessible_value().unwrap_or_else(|| "<no value>".into());
+            let id = element.clone().id().unwrap_or_else(|| "<no ID>".into());
+            println!("Element {i}: id = {:#?}, type = {:#?}, label = {label}, value = {:#?}", id, type_name, value);
+        }
+        dbg!(all_elements.len());
+        
+        let things_called_create: Vec<_> =
+            ElementHandle::find_by_accessible_label(&helixflow, "Create").collect();
+        assert_eq!(things_called_create.len(), 1);
+        let create = &things_called_create[0];
+        assert_eq!(create.type_name().unwrap().as_str(), "Button");
+        
+        let ids: Vec<_> = ElementHandle::find_by_element_id(&helixflow, "HelixFlow::id").collect();
+        assert_eq!(ids.len(), 1);
+        let id = &ids[0];
+        assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
+        assert_eq!(id.accessible_value().unwrap().as_str(), "None");
+        
+        create.invoke_accessible_default_action();
+        assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
+        assert_eq!(id.accessible_value().unwrap().as_str(), "1");
     }
 }
