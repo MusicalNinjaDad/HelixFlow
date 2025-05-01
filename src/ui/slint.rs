@@ -3,18 +3,20 @@ use slint::slint;
 slint! {
     import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
     export component HelixFlow inherits Window {
+        callback create_task;
+        in property <string> task_id: "None";
         VerticalBox {
             LineEdit {
                 placeholder-text: "Task name";
             }
             id := Text {
-                text: "None";
+                text: root.task_id;
                 accessible_label: "Task ID";
                 accessible_value: self.text;
             }
             Button {
                 text: "Create";
-                clicked() => { id.text = "1"; }
+                clicked() => { root.create_task(); }
             }
         }
     }
@@ -22,6 +24,8 @@ slint! {
 
 #[cfg(test)]
 mod test {
+    use std::rc::Rc;
+
     use i_slint_backend_testing::{init_no_event_loop, ElementHandle, ElementRoot};
 
     use super::*;
@@ -55,7 +59,7 @@ mod test {
     #[test]
     fn test_button_click() {
         init_no_event_loop();
-        let helixflow = HelixFlow::new().unwrap();
+        let helixflow = Rc::new(HelixFlow::new().unwrap());
         
         let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
         for (i, element) in all_elements.iter().enumerate() {
@@ -68,17 +72,23 @@ mod test {
         dbg!(all_elements.len());
         
         let things_called_create: Vec<_> =
-            ElementHandle::find_by_accessible_label(&helixflow, "Create").collect();
+            ElementHandle::find_by_accessible_label(helixflow.as_ref(), "Create").collect();
         assert_eq!(things_called_create.len(), 1);
         let create = &things_called_create[0];
         assert_eq!(create.type_name().unwrap().as_str(), "Button");
         
-        let ids: Vec<_> = ElementHandle::find_by_element_id(&helixflow, "HelixFlow::id").collect();
+        let ids: Vec<_> = ElementHandle::find_by_element_id(helixflow.as_ref(), "HelixFlow::id").collect();
         assert_eq!(ids.len(), 1);
         let id = &ids[0];
         assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
         assert_eq!(id.accessible_value().unwrap().as_str(), "None");
         
+        let hf_2 = helixflow.clone();
+        helixflow.on_create_task(move || {
+            hf_2.set_task_id("1".into());
+        }
+        );
+
         create.invoke_accessible_default_action();
         assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
         assert_eq!(id.accessible_value().unwrap().as_str(), "1");
