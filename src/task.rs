@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 /// A Task
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct Task<ID> {
     pub name: Cow<'static, str>,
     pub id: Option<ID>,
@@ -14,8 +14,7 @@ pub(crate) struct Task<ID> {
 
 /// Provide an implementation of a storage backend.
 pub(crate) trait StorageBackend<ID> {
-    /// Create a new task.
-    /// Creation should update the Task.id before returning Ok(()).
+    /// Create a new task in the backend, update the `task.id` then return Ok(())
     #[allow(dead_code)]
     fn create(&self, task: &mut Task<ID>) -> Result<()>;
 }
@@ -23,6 +22,8 @@ pub(crate) trait StorageBackend<ID> {
 impl<ID> Task<ID> {
     /// Create this task in a given storage backend.
     /// `&mut` because the creation process will update the `Task.id`
+    ///
+    /// Don't forget to check for and handle any `Error`s, even though you don't need the `Ok`.
     #[allow(dead_code)]
     pub(crate) fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
         backend.create(self)?;
@@ -37,6 +38,7 @@ mod tests {
 
     struct TestBackend;
 
+    /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend<u32> for TestBackend {
         fn create(&self, task: &mut Task<u32>) -> Result<()> {
             match task.name {
