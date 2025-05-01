@@ -16,7 +16,7 @@ pub(crate) struct Task<ID> {
 pub(crate) trait StorageBackend<ID> {
     /// Create a new task in the backend, update the `task.id` then return Ok(())
     #[allow(dead_code)]
-    fn create(&self, task: &mut Task<ID>) -> Result<()>;
+    async fn create(&self, task: &mut Task<ID>) -> Result<()>;
 }
 
 impl<ID> Task<ID> {
@@ -25,8 +25,8 @@ impl<ID> Task<ID> {
     ///
     /// Don't forget to check for and handle any `Error`s, even though you don't need the `Ok`.
     #[allow(dead_code)]
-    pub(crate) fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
-        backend.create(self)?;
+    pub(crate) async fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
+        backend.create(self).await?;
         Ok(())
     }
 }
@@ -40,7 +40,7 @@ mod tests {
 
     /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend<u32> for TestBackend {
-        fn create(&self, task: &mut Task<u32>) -> Result<()> {
+        async fn create(&self, task: &mut Task<u32>) -> Result<()> {
             match task.name {
                 Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
                 _ => {
@@ -51,29 +51,29 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_new_task() {
+    #[tokio::test]
+    async fn test_new_task() {
         let mut new_task = Task {
             name: "Test Task 1".into(),
             id: None,
             description: None,
         };
         let backend = TestBackend;
-        let _ = new_task.create(&backend);
+        let _ = new_task.create(&backend).await;
         assert_eq!(new_task.name, "Test Task 1");
         assert_eq!(new_task.description, None);
         assert_eq!(new_task.id, Some(1));
     }
 
-    #[test]
-    fn test_failed_to_create_task() {
+    #[tokio::test]
+    async fn test_failed_to_create_task() {
         let mut new_task = Task {
             name: "FAIL".into(),
             id: None,
             description: None,
         };
         let backend = TestBackend;
-        let err = new_task.create(&backend);
+        let err = new_task.create(&backend).await;
         assert_eq!(new_task.name, "FAIL");
         assert_eq!(new_task.description, None);
         assert_eq!(new_task.id, None);
