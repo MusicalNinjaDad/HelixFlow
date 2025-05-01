@@ -7,6 +7,6 @@ edition = "2024"
 anyhow = "1.0.98"
 i-slint-backend-testing = "=1.11.0"
 serde = { version = "1.0.219", features = ["derive"] }
-slint = "1.11.0"
+slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.2.2", features = ["kv-mem"] }
 tokio = { version = "1.44.2", features = ["macros", "rt"] }
