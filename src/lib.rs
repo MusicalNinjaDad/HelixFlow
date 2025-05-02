@@ -4,7 +4,7 @@
 mod backends {
     mod surreal;
 }
-mod task;
-mod ui {
-    mod slint;
+pub mod task;
+pub mod ui {
+    pub mod slint;
 }

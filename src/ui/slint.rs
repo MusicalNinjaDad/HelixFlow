@@ -4,9 +4,10 @@ slint! {
     import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
     export component HelixFlow inherits Window {
         callback create_task;
-        in property <string> task_id: "None";
+        in property <string> task_id: "";
+        in-out property <string> task_name: task_name_entry.text;
         VerticalBox {
-            LineEdit {
+            task_name_entry := LineEdit {
                 accessible_label: "Task name";
                 placeholder-text: self.accessible_label;
             }
@@ -56,7 +57,7 @@ mod test {
         assert_eq!(ids.len(), 1);
         let id = &ids[0];
         assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
-        assert_eq!(id.accessible_value().unwrap().as_str(), "None");
+        assert_eq!(id.accessible_value().unwrap().as_str(), "");
 
         let inputboxes: Vec<_> =
             ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
@@ -108,7 +109,7 @@ mod test {
             hf.unwrap().set_task_id("1".into());
         });
 
-        assert_eq!(id.accessible_value().unwrap().as_str(), "None");
+        assert_eq!(id.accessible_value().unwrap().as_str(), "");
         create.invoke_accessible_default_action();
         assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
         assert_eq!(id.accessible_value().unwrap().as_str(), "1");
