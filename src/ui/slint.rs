@@ -38,9 +38,8 @@ mod test {
 
         let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
         for (i, element) in all_elements.iter().enumerate() {
-            let type_name = element.clone().type_name();
+            let type_name = element.type_name();
             let label = element
-                .clone()
                 .accessible_label()
                 .unwrap_or_else(|| "<no label>".into());
             println!("Element {i}: type = {:#?}, label = {label}", type_name);
@@ -78,16 +77,14 @@ mod test {
 
         let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
         for (i, element) in all_elements.iter().enumerate() {
-            let type_name = element.clone().type_name();
+            let type_name = element.type_name();
             let label = element
-                .clone()
                 .accessible_label()
                 .unwrap_or_else(|| "<no label>".into());
             let value = element
-                .clone()
                 .accessible_value()
                 .unwrap_or_else(|| "<no value>".into());
-            let id = element.clone().id().unwrap_or_else(|| "<no ID>".into());
+            let id = element.id().unwrap_or_else(|| "<no ID>".into());
             println!(
                 "Element {i}: id = {:#?}, type = {:#?}, label = {label}, value = {:#?}",
                 id, type_name, value
@@ -106,9 +103,9 @@ mod test {
         assert_eq!(ids.len(), 1);
         let id = &ids[0];
 
-        let hf_2 = helixflow.clone();
+        let hf = helixflow.as_weak();
         helixflow.on_create_task(move || {
-            hf_2.set_task_id("1".into());
+            hf.unwrap().set_task_id("1".into());
         });
 
         assert_eq!(id.accessible_value().unwrap().as_str(), "None");
