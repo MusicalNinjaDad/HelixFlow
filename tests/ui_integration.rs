@@ -1,6 +1,8 @@
-use helixflow::task::{Task,TestBackend};
+use helixflow::task::{Task, TestBackend};
 use helixflow::ui::slint::HelixFlow;
+use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
+use slint::platform::PointerEventButton;
 use tokio::runtime;
 
 #[test]
@@ -10,7 +12,10 @@ fn test_set_task_id() {
     slint::spawn_local(async move {
         let helixflow = HelixFlow::new().unwrap();
         let backend = TestBackend;
-        let rt = runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let rt = runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
         let hf = helixflow.as_weak();
         helixflow.on_create_task(move || {
             let helixflow = hf.unwrap();
@@ -18,7 +23,7 @@ fn test_set_task_id() {
             let mut task = Task::<u32> {
                 name: task_name.into(),
                 description: None,
-                id: None
+                id: None,
             };
             rt.block_on(task.create(&backend)).unwrap();
             let task_id = task.id.unwrap();
@@ -26,10 +31,16 @@ fn test_set_task_id() {
         });
         helixflow.set_task_name("A valid task".into());
         assert_eq!(helixflow.get_task_id(), "");
-        helixflow.invoke_create_task();
+
+        let create_: Vec<_> =
+            ElementHandle::find_by_element_id(&helixflow, "HelixFlow::create").collect();
+        assert_eq!(create_.len(), 1);
+        let create = &create_[0];
+        create.single_click(PointerEventButton::Left).await;
         assert_eq!(helixflow.get_task_id(), "1");
         slint::quit_event_loop().unwrap();
-    }).unwrap();
+    })
+    .unwrap();
 
     slint::run_event_loop().unwrap();
 }

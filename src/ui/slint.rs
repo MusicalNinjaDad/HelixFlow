@@ -16,7 +16,7 @@ slint! {
                 text: root.task_id;
                 accessible_value: self.text;
             }
-            Button {
+            create := Button {
                 text: "Create";
                 clicked() => { root.create_task(); }
             }
