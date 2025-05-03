@@ -76,17 +76,9 @@ fn test_set_task_id() {
         // create.invoke_accessible_default_action();
         create.single_click(PointerEventButton::Left).await;
         dbg!("Button clicked");
-        dbg!("Polling the task creation request");
-        loop {
-            if let Some(handle) = task_creation_request.borrow_mut().take() {
-                dbg!("Task creation request has been sent, awaiting ...");
-                handle.await;
-                dbg!("Task creation request completed");
-                break;
-            }
-            slint::platform::update_timers_and_animations();
-            std::thread::sleep(std::time::Duration::from_millis(5));
-        }
+        dbg!("Awaiting the task creation request");
+        task_creation_request.borrow_mut().take().unwrap().await;
+        dbg!("Task creation request awaited ... continuing");
         slint::quit_event_loop().unwrap();
         dbg!("Finishing test execution");
     })
