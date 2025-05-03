@@ -1,4 +1,8 @@
-use slint::slint;
+use std::{cell::RefCell, fmt::Display};
+
+use slint::{JoinHandle, slint};
+
+use crate::task::{StorageBackend, Task};
 
 slint! {
     import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
@@ -23,6 +27,32 @@ slint! {
                 clicked() => { root.create_task(); }
             }
         }
+    }
+}
+
+pub fn create_task<ID: Display + 'static>(
+    helixflow_weak: slint::Weak<HelixFlow>,
+    handle_holder: std::rc::Weak<RefCell<Option<JoinHandle<()>>>>,
+    backend: impl StorageBackend<ID> + Copy + 'static,
+) -> impl FnMut() + 'static {
+    move || {
+        let helixflow = helixflow_weak.unwrap();
+        let task_creation_request = handle_holder.upgrade().unwrap();
+        helixflow.set_create_enabled(false);
+        let task_name: String = helixflow.get_task_name().into();
+        let mut task = Task::<ID> {
+            name: task_name.into(),
+            description: None,
+            id: None,
+        };
+        let tcr_handle = slint::spawn_local(async_compat::Compat::new(async move {
+            task.create(&backend).await.unwrap();
+            let task_id = task.id.unwrap();
+            helixflow.set_task_id(format!("{task_id}").into());
+            helixflow.set_create_enabled(true);
+        }))
+        .unwrap();
+        *task_creation_request.borrow_mut() = Some(tcr_handle);
     }
 }
 

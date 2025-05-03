@@ -5,11 +5,11 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
+async-compat = "0.2.4"
 serde = { version = "1.0.219", features = ["derive"] }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.0", features = ["kv-mem"] }
 
 [dev-dependencies]
-async-compat = "0.2.4"
 i-slint-backend-testing = "=1.11.0"
 tokio = { version = "1.44.2", features = ["macros", "rt", "time"] }
