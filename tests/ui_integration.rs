@@ -1,6 +1,7 @@
 use helixflow::task::{Task, TestBackend};
 use helixflow::ui::slint::HelixFlow;
 use i_slint_backend_testing::ElementHandle;
+use slint::platform::PointerEventButton;
 use slint::ComponentHandle;
 
 #[test]
@@ -64,8 +65,8 @@ fn test_set_task_id() {
         let create = &creates_[0];
         
         dbg!("Clicking button...");
-        create.invoke_accessible_default_action();
-        // create.single_click(PointerEventButton::Left).await;
+        // create.invoke_accessible_default_action();
+        create.single_click(PointerEventButton::Left).await;
         dbg!("Button clicked");
     })
     .unwrap();
