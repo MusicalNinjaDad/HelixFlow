@@ -32,6 +32,7 @@ impl<ID> Task<ID> {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct TestBackend;
 
 /// Hardcoded cases to unit test the basic `Task` interface

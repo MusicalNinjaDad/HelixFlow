@@ -4,6 +4,7 @@ slint! {
     import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
     export component HelixFlow inherits Window {
         callback create_task;
+        in property <bool> create_enabled: true;
         in property <string> task_id: "";
         in-out property <string> task_name: task_name_entry.text;
         VerticalBox {
@@ -17,6 +18,7 @@ slint! {
                 accessible_value: self.text;
             }
             create := Button {
+                enabled: root.create_enabled;
                 text: "Create";
                 clicked() => { root.create_task(); }
             }
