@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::Display};
+use std::{cell::RefCell, fmt::Display, sync::Arc};
 
 use slint::{JoinHandle, slint};
 
@@ -30,14 +30,19 @@ slint! {
     }
 }
 
-pub fn create_task<ID: Display + 'static>(
+pub fn create_task<ID, BKEND>(
     helixflow_weak: slint::Weak<HelixFlow>,
     handle_holder: std::rc::Weak<RefCell<Option<JoinHandle<()>>>>,
-    backend: impl StorageBackend<ID> + Copy + 'static,
-) -> impl FnMut() + 'static {
+    backend: Arc<BKEND>,
+) -> impl FnMut() + 'static
+where
+    ID: Display + 'static,
+    BKEND: StorageBackend<ID> + Copy + 'static,
+{
     move || {
         let helixflow = helixflow_weak.unwrap();
         let task_creation_request = handle_holder.upgrade().unwrap();
+        let backend = backend.clone();
         helixflow.set_create_enabled(false);
         let task_name: String = helixflow.get_task_name().into();
         let mut task = Task::<ID> {
@@ -46,7 +51,7 @@ pub fn create_task<ID: Display + 'static>(
             id: None,
         };
         let tcr_handle = slint::spawn_local(async_compat::Compat::new(async move {
-            task.create(&backend).await.unwrap();
+            task.create(&*backend).await.unwrap();
             let task_id = task.id.unwrap();
             helixflow.set_task_id(format!("{task_id}").into());
             helixflow.set_create_enabled(true);
