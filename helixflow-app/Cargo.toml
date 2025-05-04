@@ -1,0 +1,10 @@
+[package]
+name = "helixflow-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+helixflow = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+slint = { workspace = true, features = ["backend-winit-wayland"] }
+
