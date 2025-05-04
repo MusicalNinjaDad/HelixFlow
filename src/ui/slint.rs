@@ -1,6 +1,8 @@
-use std::{cell::RefCell, fmt::Display, sync::Arc};
+use std::{fmt::Display, sync::Arc};
 
-use slint::{JoinHandle, slint};
+use slint::slint;
+
+use wait::prelude::*;
 
 use crate::task::{StorageBackend, Task};
 
@@ -32,7 +34,6 @@ slint! {
 
 pub fn create_task<ID, BKEND>(
     helixflow_weak: slint::Weak<HelixFlow>,
-    handle_holder: std::rc::Weak<RefCell<Option<JoinHandle<()>>>>,
     backend: Arc<BKEND>,
 ) -> impl FnMut() + 'static
 where
@@ -41,7 +42,6 @@ where
 {
     move || {
         let helixflow = helixflow_weak.unwrap();
-        let task_creation_request = handle_holder.upgrade().unwrap();
         let backend = backend.clone();
         helixflow.set_create_enabled(false);
         let task_name: String = helixflow.get_task_name().into();
@@ -50,14 +50,10 @@ where
             description: None,
             id: None,
         };
-        let tcr_handle = slint::spawn_local(async move {
-            task.create(&*backend).await.unwrap();
+                task.create(&*backend).wait().unwrap();
             let task_id = task.id.unwrap();
             helixflow.set_task_id(format!("{task_id}").into());
             helixflow.set_create_enabled(true);
-        })
-        .unwrap();
-        *task_creation_request.borrow_mut() = Some(tcr_handle);
     }
 }
 
