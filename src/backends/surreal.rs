@@ -32,7 +32,7 @@ impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
             .unwrap()
             .with_context(|| format!("Creating new record for {:#?} in SurrealDb", task))?;
         // TODO: Wrangle id (into a couple of `Cow`s?) so it can be passed directly to
-        // `.selectselect<O>(&self, resource: impl surrealdb::opt::IntoResource<O>)` without
+        // `.select<O>(&self, resource: impl surrealdb::opt::IntoResource<O>)` without
         // ownership and conversion concerns. (Or only partially, to avoid taking time now, and take
         // the time to clone/convert only when needed, e.g. on the first attempt to select?)
         task.id = dbtask.id;
@@ -71,8 +71,8 @@ mod tests {
             let backend = SurrealDb::create().await.unwrap();
             new_task.create(&backend).await.unwrap(); // Unwrap to check we don't get any errors
             assert_eq!(new_task.name, "Test Task 1");
-            assert_eq!(new_task.description, None);
-            assert!(new_task.id != None);
+            assert!(new_task.description.is_none());
+            assert!(new_task.id.is_some());
         }
     }
     #[tokio::test]
