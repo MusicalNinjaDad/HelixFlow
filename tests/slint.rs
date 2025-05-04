@@ -36,6 +36,7 @@ fn test_set_task_id() {
         let create = &creates_[0];
 
         create.single_click(PointerEventButton::Left).await;
+        assert!(!helixflow.get_create_enabled());
         task_creation_request.borrow_mut().take().unwrap().await;
         slint::quit_event_loop().unwrap();
     })
