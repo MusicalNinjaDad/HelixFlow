@@ -37,7 +37,7 @@ pub fn create_task<ID, BKEND>(
 ) -> impl FnMut() + 'static
 where
     ID: Display + 'static,
-    BKEND: StorageBackend<ID> + Copy + 'static,
+    BKEND: StorageBackend<ID> + 'static,
 {
     move || {
         let helixflow = helixflow_weak.unwrap();
