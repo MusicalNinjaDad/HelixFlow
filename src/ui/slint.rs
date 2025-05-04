@@ -50,12 +50,12 @@ where
             description: None,
             id: None,
         };
-        let tcr_handle = slint::spawn_local(async_compat::Compat::new(async move {
+        let tcr_handle = slint::spawn_local(async move {
             task.create(&*backend).await.unwrap();
             let task_id = task.id.unwrap();
             helixflow.set_task_id(format!("{task_id}").into());
             helixflow.set_create_enabled(true);
-        }))
+        })
         .unwrap();
         *task_creation_request.borrow_mut() = Some(tcr_handle);
     }

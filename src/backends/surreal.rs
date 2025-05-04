@@ -1,7 +1,11 @@
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use anyhow::{Context, Ok};
-use surrealdb::{engine::local::{Db, Mem}, sql::Thing, Connection, Surreal};
+use surrealdb::{
+    Connection, Surreal,
+    engine::local::{Db, Mem},
+    sql::Thing,
+};
 
 use crate::task::{StorageBackend, Task};
 
