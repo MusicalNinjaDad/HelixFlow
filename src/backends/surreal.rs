@@ -1,7 +1,7 @@
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use anyhow::{Context, Ok};
-use surrealdb::{Connection, Surreal, sql::Thing};
+use surrealdb::{engine::local::{Db, Mem}, sql::Thing, Connection, Surreal};
 
 use crate::task::{StorageBackend, Task};
 
@@ -11,7 +11,8 @@ use crate::task::{StorageBackend, Task};
 /// on the type of `<C: Connection>` selected. See the unit tests for an example of instantiating
 /// an in-memory Db.
 #[allow(dead_code)]
-struct SurrealDb<C: Connection> {
+#[derive(Debug, Clone)]
+pub struct SurrealDb<C: Connection> {
     /// The instatiated Surreal Db `Connection`. This should be in an authenticated state with
     /// `namespace` & `database` already selected, so that functions such as `create()` can be
     /// called without further preamble.
@@ -40,25 +41,25 @@ impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
     }
 }
 
+/// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow"
+impl SurrealDb<Db> {
+    #[allow(dead_code)]
+    pub async fn create() -> anyhow::Result<Self> {
+        let db = Surreal::new::<Mem>(())
+            .await
+            .context("Initialising database")?;
+        db.use_ns("HelixFlow")
+            .use_db("HelixFlow")
+            .await
+            .context("Selecting database namespace")?;
+
+        Ok(Self { db })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use surrealdb::engine::local::{Db, Mem};
-
-    /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow"
-    impl SurrealDb<Db> {
-        async fn create() -> anyhow::Result<Self> {
-            let db = Surreal::new::<Mem>(())
-                .await
-                .context("Initialising database")?;
-            db.use_ns("HelixFlow")
-                .use_db("HelixFlow")
-                .await
-                .context("Selecting database namespace")?;
-
-            Ok(Self { db })
-        }
-    }
 
     #[tokio::test]
     async fn test_new_task_id_updated() {
