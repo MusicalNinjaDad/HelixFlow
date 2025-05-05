@@ -1,0 +1,10 @@
+[package]
+name = "surreal"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+helixflow.workspace = true
+surrealdb.workspace = true
+tokio = { workspace = true, features = ["rt"] }

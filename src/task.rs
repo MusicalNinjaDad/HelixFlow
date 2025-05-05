@@ -15,9 +15,7 @@ pub struct Task<ID> {
 /// Provide an implementation of a storage backend.
 pub trait StorageBackend<ID> {
     /// Create a new task in the backend, update the `task.id` then return Ok(())
-    #[allow(dead_code)]
-    #[allow(async_fn_in_trait)]
-    async fn create(&self, task: &mut Task<ID>) -> Result<()>;
+    fn create(&self, task: &mut Task<ID>) -> Result<()>;
 }
 
 impl<ID> Task<ID> {
@@ -25,9 +23,8 @@ impl<ID> Task<ID> {
     /// `&mut` because the creation process will update the `Task.id`
     ///
     /// Don't forget to check for, and handle, any `Error`s, even though you don't need the `Ok`.
-    #[allow(dead_code)]
-    pub async fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
-        backend.create(self).await?;
+    pub fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
+        backend.create(self)?;
         Ok(())
     }
 }
@@ -37,7 +34,7 @@ pub struct TestBackend;
 
 /// Hardcoded cases to unit test the basic `Task` interface
 impl StorageBackend<u32> for TestBackend {
-    async fn create(&self, task: &mut Task<u32>) -> Result<()> {
+    fn create(&self, task: &mut Task<u32>) -> Result<()> {
         match task.name {
             Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
             _ => {
@@ -60,7 +57,7 @@ pub mod tests {
             description: None,
         };
         let backend = TestBackend;
-        let _ = new_task.create(&backend).await;
+        let _ = new_task.create(&backend);
         assert_eq!(new_task.name, "Test Task 1");
         assert_eq!(new_task.description, None);
         assert_eq!(new_task.id, Some(1));
@@ -74,7 +71,7 @@ pub mod tests {
             description: None,
         };
         let backend = TestBackend;
-        let err = new_task.create(&backend).await;
+        let err = new_task.create(&backend);
         assert_eq!(new_task.name, "FAIL");
         assert_eq!(new_task.description, None);
         assert_eq!(new_task.id, None);
