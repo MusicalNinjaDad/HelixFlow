@@ -1,4 +1,4 @@
-use std::{fmt::Display, sync::Arc};
+use std::{fmt::Display, rc::Rc};
 
 use slint::slint;
 
@@ -32,7 +32,7 @@ slint! {
 
 pub fn create_task<ID, BKEND>(
     helixflow_weak: slint::Weak<HelixFlow>,
-    backend: Arc<BKEND>,
+    backend: Rc<BKEND>,
 ) -> impl FnMut() + 'static
 where
     ID: Display + 'static,

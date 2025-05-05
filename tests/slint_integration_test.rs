@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use i_slint_backend_testing::ElementHandle;
 use slint::platform::PointerEventButton;
@@ -12,7 +12,7 @@ fn test_set_task_id() {
     i_slint_backend_testing::init_integration_test_with_system_time();
 
     let helixflow = HelixFlow::new().unwrap();
-    let backend = Arc::new(TestBackend);
+    let backend = Rc::new(TestBackend);
 
     let hf = helixflow.as_weak();
     helixflow.on_create_task(create_task(hf, backend));
