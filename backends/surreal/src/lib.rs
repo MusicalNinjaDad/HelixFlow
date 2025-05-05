@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use anyhow::{Context, Ok};
+use anyhow::{anyhow, Context, Ok, Result};
 use surrealdb::{
     Connection, Surreal,
     engine::local::{Db, Mem},
@@ -33,7 +33,7 @@ pub struct SurrealDb<C: Connection> {
 /// A `Thing` is a wierd SurrealDb Struct with a `tb` (= "table") and `id` field,
 /// both as owned `String`s :-x (!!)
 impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
-    fn create(&self, task: &mut Task<Thing>) -> anyhow::Result<()> {
+    fn create(&self, task: &mut Task<Thing>) -> Result<()> {
         let dbtask: Task<Thing> = self
             .rt
             .block_on(self.db.create("Tasks").content(task.clone()).into_future())
@@ -45,6 +45,9 @@ impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
         // the time to clone/convert only when needed, e.g. on the first attempt to select?)
         task.id = dbtask.id;
         Ok(())
+    }
+    fn get(&self, id: Thing) -> Result<Task<Thing>> {
+            self.rt.block_on(self.db.select((id.tb.clone(), id.id.to_raw())).into_future())?.ok_or_else(|| {anyhow!("Invalid task ID: {}", id)})
     }
 }
 
@@ -68,6 +71,8 @@ impl SurrealDb<Db> {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
@@ -85,7 +90,7 @@ mod tests {
             assert!(new_task.id.is_some());
         }
     }
-    #[cfg(ignore)]
+    #[test]
     fn test_new_task_written_to_db() {
         {
             let mut new_task = Task {
@@ -96,14 +101,19 @@ mod tests {
             let backend = SurrealDb::create().unwrap();
             new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
             let id = new_task.id.unwrap();
-            let stored_task: Task<Thing> = backend
-                .db
-                .select((id.tb.clone(), id.id.to_raw()))
-                .await
-                .unwrap()
-                .unwrap();
+            let stored_task: Task<Thing> = backend.get(id).unwrap();
             assert_eq!(stored_task.name, new_task.name);
             assert_eq!(stored_task.description, new_task.description);
+        }
+    }
+
+    #[test]
+    fn test_get_invalid_task() {
+        {
+            let backend = SurrealDb::create().unwrap();
+            let id = Thing::from_str("table:record").unwrap();
+            let err = backend.get(id).unwrap_err();
+            assert_eq!(format!("{}", err), "Invalid task ID: table:record");
         }
     }
 }
