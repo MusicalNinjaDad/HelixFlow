@@ -8,4 +8,4 @@ helixflow.workspace = true
 slint.workspace = true
 
 [dev-dependencies]
-i-slint-backend-testing = "1.11.0"
+i-slint-backend-testing.workspace = true
