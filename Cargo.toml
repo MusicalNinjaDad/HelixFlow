@@ -1,5 +1,5 @@
 [workspace]
-members = [ "backends/helixflow-surreal","helixflow-app", "ui/helixflow-slint"]
+members = ["backends/helixflow-surreal", "helixflow-app", "ui/helixflow-slint"]
 
 [package]
 name = "helixflow"
@@ -20,7 +20,7 @@ i-slint-backend-testing.workspace = true
 # internal stuff
 helixflow = { path = "." }
 helixflow-slint = { path = "ui/helixflow-slint" }
-helixflow-surreal = {path="backends/helixflow-surreal"}
+helixflow-surreal = { path = "backends/helixflow-surreal" }
 
 # main dependencies - only specify features if required to define default actions
 anyhow = "1.0.98"
@@ -28,6 +28,13 @@ serde = { version = "1.0.219" }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.0", features = ["kv-mem"] }
 tokio = { version = "1.44.2" }
+
+# wasm
+console_error_panic_hook = { version = "0.1.7" }
+console_log = { version = "1.0.0" }
+getrandom = { version = "0.3.2", features = ["wasm_js"] }
+log = { version = "0.4.27" }
+wasm-bindgen = { version = "0.2" }
 
 # dev-only dependencies
 i-slint-backend-testing = "=1.11.0"

@@ -59,6 +59,7 @@ RUN dnf -y install \
     mold \
     rustup \
 && rustup-init -v -y \
+&& rustup target add wasm32-unknown-unknown\
 && rustup component add \
     clippy \
     llvm-tools-preview \
@@ -70,11 +71,13 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
     cargo-expand \
     cargo-nextest \
     grcov \
-    mdbook
+    mdbook \
+    miniserve \
+    wasm-pack
 RUN chmod -R a+rwX ${CARGO_HOME} \
 && chmod -R a+rwX ${RUSTUP_HOME}
 
-# Install SurrealDb
+# Install SurrealDb server
 RUN curl -sSf https://install.surrealdb.com | sh \
 && dnf -y install logrotate
 
