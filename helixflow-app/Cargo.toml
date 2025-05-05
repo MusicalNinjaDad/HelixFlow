@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-helixflow = { workspace = true }
-slint = { workspace = true, features = ["backend-winit-wayland"] }
-helixflow-surreal = { version = "0.1.0", path = "../backends/helixflow-surreal" }
-helixflow-slint = { version = "0.1.0", path = "../ui/helixflow-slint" }
-
+helixflow-surreal.workspace = true
+helixflow-slint.workspace = true
+slint.workspace = true

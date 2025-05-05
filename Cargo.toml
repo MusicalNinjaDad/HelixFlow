@@ -9,24 +9,25 @@ edition = "2024"
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-slint = { workspace = true, features = ["backend-winit-wayland"] }
-surrealdb = { workspace = true, features = ["kv-mem"] }
-tokio = { workspace = true, features = ["macros", "rt"] }
 
 [dev-dependencies]
 helixflow-slint = { path = "ui/helixflow-slint" }
 helixflow-surreal = { path = "backends/helixflow-surreal" }
+slint = { workspace = true }
 i-slint-backend-testing.workspace = true
 
 [workspace.dependencies]
+# internal stuff
 helixflow = { path = "." }
-helixflow_slint = { path = "ui/helixflow-slint" }
-helixflow_surreal = {path="backends/helixflow-surreal"}
+helixflow-slint = { path = "ui/helixflow-slint" }
+helixflow-surreal = {path="backends/helixflow-surreal"}
 
+# main dependencies - only specify features if required to define default actions
 anyhow = "1.0.98"
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0.219" }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.0", features = ["kv-mem"] }
-tokio = { version = "1.44.2", features = ["macros", "rt"] }
+tokio = { version = "1.44.2" }
 
+# dev-only dependencies
 i-slint-backend-testing = "=1.11.0"
