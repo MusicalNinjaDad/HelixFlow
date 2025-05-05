@@ -5,7 +5,7 @@ use slint::platform::PointerEventButton;
 use slint::ComponentHandle;
 
 use helixflow::task::TestBackend;
-use helixflow::ui::slint::{HelixFlow, create_task};
+use helixflow_slint::{HelixFlow, create_task};
 
 #[test]
 fn test_set_task_id() {

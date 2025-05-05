@@ -14,10 +14,13 @@ surrealdb = { workspace = true, features = ["kv-mem"] }
 tokio = { workspace = true, features = ["macros", "rt"] }
 
 [dev-dependencies]
+helixflow-slint = { path = "ui/helixflow-slint" }
+i-slint-backend-testing.workspace = true
 
 
 [workspace.dependencies]
 helixflow = { path = "." }
+helixflow_slint = { path = "ui/helixflow-slint" }
 anyhow = "1.0.98"
 serde = { version = "1.0.219", features = ["derive"] }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
