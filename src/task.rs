@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 /// A Task
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Task<ID> {
     pub name: Cow<'static, str>,
     pub id: Option<ID>,
@@ -16,6 +16,7 @@ pub struct Task<ID> {
 pub trait StorageBackend<ID> {
     /// Create a new task in the backend, update the `task.id` then return Ok(())
     fn create(&self, task: &mut Task<ID>) -> Result<()>;
+    fn get(&self, id: ID) -> Result<Task<ID>>;
 }
 
 impl<ID> Task<ID> {
@@ -43,14 +44,24 @@ impl StorageBackend<u32> for TestBackend {
             }
         }
     }
+    fn get(&self, id: u32) -> Result<Task<u32>> {
+        match id {
+            1 => Ok(Task {
+                name: "Task 1".into(),
+                id: Some(id),
+                description: None,
+            }),
+            _ => Err(anyhow!("Invalid task ID: {}", id)),
+        }
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn test_new_task() {
+    #[test]
+    fn test_new_task() {
         let mut new_task = Task {
             name: "Test Task 1".into(),
             id: None,
@@ -63,8 +74,8 @@ pub mod tests {
         assert_eq!(new_task.id, Some(1));
     }
 
-    #[tokio::test]
-    async fn test_failed_to_create_task() {
+    #[test]
+    fn test_failed_to_create_task() {
         let mut new_task = Task {
             name: "FAIL".into(),
             id: None,
@@ -76,5 +87,26 @@ pub mod tests {
         assert_eq!(new_task.description, None);
         assert_eq!(new_task.id, None);
         assert!(err.is_err());
+    }
+
+    #[test]
+    fn test_get_task() {
+        let backend = TestBackend;
+        let task = backend.get(1).unwrap();
+        assert_eq!(
+            task,
+            Task {
+                name: "Task 1".into(),
+                id: Some(1),
+                description: None
+            }
+        )
+    }
+
+    #[test]
+    fn test_get_invalid_task() {
+        let backend = TestBackend;
+        let err = backend.get(2).unwrap_err();
+        assert_eq!(format!("{}", err), "Invalid task ID: 2");
     }
 }
