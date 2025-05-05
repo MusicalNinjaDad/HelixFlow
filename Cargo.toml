@@ -1,24 +1,10 @@
 [workspace]
-members = ["backends/helixflow-surreal", "helixflow-app", "ui/helixflow-slint"]
-
-[package]
-name = "helixflow"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-anyhow = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-
-[dev-dependencies]
-helixflow-slint = { path = "ui/helixflow-slint" }
-helixflow-surreal = { path = "backends/helixflow-surreal" }
-slint = { workspace = true }
-i-slint-backend-testing.workspace = true
+members = ["backends/helixflow-surreal", "helixflow", "helixflow-core", "ui/helixflow-slint"]
+resolver = "3"
 
 [workspace.dependencies]
 # internal stuff
-helixflow = { path = "." }
+helixflow-core = { path = "helixflow-core" }
 helixflow-slint = { path = "ui/helixflow-slint" }
 helixflow-surreal = { path = "backends/helixflow-surreal" }
 

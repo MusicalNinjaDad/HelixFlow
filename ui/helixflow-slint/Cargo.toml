@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-helixflow.workspace = true
+helixflow-core.workspace = true
 slint.workspace = true
 
 [dev-dependencies]

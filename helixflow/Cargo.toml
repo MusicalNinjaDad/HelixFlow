@@ -1,5 +1,5 @@
 [package]
-name = "helixflow-app"
+name = "helixflow"
 version = "0.1.0"
 edition = "2024"
 
@@ -10,6 +10,10 @@ crate-type = ["cdylib", "rlib"]
 helixflow-surreal.workspace = true
 helixflow-slint.workspace = true
 slint.workspace = true
+
+[dev-dependencies]
+helixflow-core.workspace = true
+i-slint-backend-testing.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook.workspace = true

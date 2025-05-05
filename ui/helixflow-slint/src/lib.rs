@@ -2,7 +2,7 @@ use std::{fmt::Display, rc::Weak};
 
 use slint::slint;
 
-use helixflow::task::{StorageBackend, Task};
+use helixflow_core::task::{StorageBackend, Task};
 
 slint! {
     import { Button, LineEdit, VerticalBox } from "std-widgets.slint";

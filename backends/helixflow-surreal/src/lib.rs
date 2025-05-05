@@ -9,7 +9,7 @@ use surrealdb::{
     sql::Thing,
 };
 
-use helixflow::task::{StorageBackend, Task};
+use helixflow_core::task::{StorageBackend, Task};
 
 /// An instance of a SurrealDb ready to use as a `StorageBackend`
 ///
