@@ -2,9 +2,7 @@ use std::{fmt::Display, sync::Arc};
 
 use slint::slint;
 
-use wait::prelude::*;
-
-use crate::task::{StorageBackend, Task};
+use helixflow::task::{StorageBackend, Task};
 
 slint! {
     import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
@@ -50,7 +48,7 @@ where
             description: None,
             id: None,
         };
-                task.create(&*backend).wait().unwrap();
+                task.create(&*backend).unwrap();
             let task_id = task.id.unwrap();
             helixflow.set_task_id(format!("{task_id}").into());
             helixflow.set_create_enabled(true);

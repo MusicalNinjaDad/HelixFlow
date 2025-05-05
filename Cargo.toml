@@ -1,5 +1,5 @@
 [workspace]
-members = [ "backends/surreal","helixflow-app"]
+members = [ "backends/surreal","helixflow-app", "ui/helixflow-slint"]
 
 [package]
 name = "helixflow"
