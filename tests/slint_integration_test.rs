@@ -15,7 +15,8 @@ fn test_set_task_id() {
     let backend = Rc::new(TestBackend);
 
     let hf = helixflow.as_weak();
-    helixflow.on_create_task(create_task(hf, backend));
+    let be = Rc::downgrade(&backend);
+    helixflow.on_create_task(create_task(hf, be));
 
     let hf = helixflow.as_weak();
 

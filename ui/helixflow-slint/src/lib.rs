@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc};
+use std::{fmt::Display, rc::Weak};
 
 use slint::slint;
 
@@ -32,7 +32,7 @@ slint! {
 
 pub fn create_task<ID, BKEND>(
     helixflow_weak: slint::Weak<HelixFlow>,
-    backend: Rc<BKEND>,
+    backend: Weak<BKEND>,
 ) -> impl FnMut() + 'static
 where
     ID: Display + 'static,
@@ -40,7 +40,7 @@ where
 {
     move || {
         let helixflow = helixflow_weak.unwrap();
-        let backend = backend.clone();
+        let backend = backend.upgrade().unwrap();
         helixflow.set_create_enabled(false);
         let task_name: String = helixflow.get_task_name().into();
         let mut task = Task::<ID> {
@@ -48,7 +48,7 @@ where
             description: None,
             id: None,
         };
-                task.create(&*backend).unwrap();
+                task.create(backend.as_ref()).unwrap();
             let task_id = task.id.unwrap();
             helixflow.set_task_id(format!("{task_id}").into());
             helixflow.set_create_enabled(true);
