@@ -48,10 +48,10 @@ where
             description: None,
             id: None,
         };
-                task.create(backend.as_ref()).unwrap();
-            let task_id = task.id.unwrap();
-            helixflow.set_task_id(format!("{task_id}").into());
-            helixflow.set_create_enabled(true);
+        task.create(backend.as_ref()).unwrap();
+        let task_id = task.id.unwrap();
+        helixflow.set_task_id(format!("{task_id}").into());
+        helixflow.set_create_enabled(true);
     }
 }
 

@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use anyhow::{anyhow, Context, Ok, Result};
+use anyhow::{Context, Ok, Result, anyhow};
 use surrealdb::{
     Connection, Surreal,
     engine::local::{Db, Mem},
@@ -47,7 +47,13 @@ impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
         Ok(())
     }
     fn get(&self, id: Thing) -> Result<Task<Thing>> {
-            self.rt.block_on(self.db.select((id.tb.clone(), id.id.to_raw())).into_future())?.ok_or_else(|| {anyhow!("Invalid task ID: {}", id)})
+        self.rt
+            .block_on(
+                self.db
+                    .select((id.tb.clone(), id.id.to_raw()))
+                    .into_future(),
+            )?
+            .ok_or_else(|| anyhow!("Invalid task ID: {}", id))
     }
 }
 

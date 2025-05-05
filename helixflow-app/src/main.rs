@@ -5,8 +5,8 @@ use std::rc::Rc;
 
 use slint::ComponentHandle;
 
+use helixflow_slint::{HelixFlow, create_task};
 use helixflow_surreal::SurrealDb;
-use helixflow_slint::{create_task, HelixFlow};
 
 fn main() {
     let backend = Rc::new(SurrealDb::create().unwrap());

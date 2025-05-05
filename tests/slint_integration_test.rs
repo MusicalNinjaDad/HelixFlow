@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use i_slint_backend_testing::ElementHandle;
-use slint::platform::PointerEventButton;
 use slint::ComponentHandle;
+use slint::platform::PointerEventButton;
 
 use helixflow::task::TestBackend;
 use helixflow_slint::{HelixFlow, create_task};
