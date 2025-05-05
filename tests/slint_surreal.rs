@@ -1,25 +1,23 @@
-use std::sync::Arc;
-
-use tokio::task::block_in_place;
-use tokio::test;
+use std::rc::Rc;
 
 use i_slint_backend_testing::ElementHandle;
 use slint::platform::PointerEventButton;
 use slint::ComponentHandle;
 
-use helixflow::backends::surreal::SurrealDb;
-use helixflow::ui::slint::{HelixFlow, create_task};
+use helixflow_surreal::SurrealDb;
+use helixflow_slint::{HelixFlow, create_task};
 
-#[test(flavor = "multi_thread")]
-async fn test_slint_with_surreal() {
-    let backend = Arc::new(SurrealDb::create().await.unwrap());
+#[test]
+fn test_slint_with_surreal() {
+    let backend = Rc::new(SurrealDb::create().unwrap());
 
     i_slint_backend_testing::init_integration_test_with_system_time();
 
     let helixflow = HelixFlow::new().unwrap();
 
     let hf = helixflow.as_weak();
-    helixflow.on_create_task(create_task(hf, backend));
+    let be = Rc::downgrade(&backend);
+    helixflow.on_create_task(create_task(hf, be));
 
     let hf = helixflow.as_weak();
     slint::spawn_local(async move {
@@ -38,7 +36,7 @@ async fn test_slint_with_surreal() {
     })
     .unwrap();
 
-    block_in_place(slint::run_event_loop).unwrap();
+    slint::run_event_loop().unwrap();
 
     assert!(helixflow.get_task_id().starts_with("Tasks:"));
     assert!(helixflow.get_create_enabled());

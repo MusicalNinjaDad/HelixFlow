@@ -1,5 +1,5 @@
 [workspace]
-members = [ "backends/surreal","helixflow-app", "ui/helixflow-slint"]
+members = [ "backends/helixflow-surreal","helixflow-app", "ui/helixflow-slint"]
 
 [package]
 name = "helixflow"
@@ -15,12 +15,14 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 
 [dev-dependencies]
 helixflow-slint = { path = "ui/helixflow-slint" }
+helixflow-surreal = { path = "backends/helixflow-surreal" }
 i-slint-backend-testing.workspace = true
-
 
 [workspace.dependencies]
 helixflow = { path = "." }
 helixflow_slint = { path = "ui/helixflow-slint" }
+helixflow_surreal = {path="backends/helixflow-surreal"}
+
 anyhow = "1.0.98"
 serde = { version = "1.0.219", features = ["derive"] }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
