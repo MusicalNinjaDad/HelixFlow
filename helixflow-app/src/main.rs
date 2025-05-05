@@ -1,21 +1,20 @@
 //! This is where the executable runtime invokation lives. It will make a lot of use of the
 //! HelixFlow library ;-)
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use slint::ComponentHandle;
-use tokio::task::block_in_place;
 
-use helixflow::backends::surreal::SurrealDb;
-use helixflow::ui::slint::{create_task, HelixFlow};
+use helixflow_surreal::SurrealDb;
+use helixflow_slint::{create_task, HelixFlow};
 
-#[tokio::main]
-async fn main() {
-    let backend = Arc::new(SurrealDb::create().await.unwrap());
+fn main() {
+    let backend = Rc::new(SurrealDb::create().unwrap());
     let helixflow = HelixFlow::new().unwrap();
     let hf = helixflow.as_weak();
-    helixflow.on_create_task(create_task(hf, backend));
+    let be = Rc::downgrade(&backend);
+    helixflow.on_create_task(create_task(hf, be));
     helixflow.show().unwrap();
-    block_in_place(slint::run_event_loop).unwrap();
+    slint::run_event_loop().unwrap();
     helixflow.hide().unwrap();
 }
