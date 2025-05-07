@@ -3,8 +3,9 @@ use std::rc::Rc;
 use log::debug;
 use slint::ComponentHandle;
 
-use helixflow_slint::{HelixFlow, create_task};
-use helixflow_surreal::SurrealDb;
+use helixflow_slint::HelixFlow;
+use helixflow_slint::blocking::create_task;
+use helixflow_surreal::blocking::SurrealDb;
 
 pub fn run_helixflow() {
     debug!("Starting HelixFlow...");
