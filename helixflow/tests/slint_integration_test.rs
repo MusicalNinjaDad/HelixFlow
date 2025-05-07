@@ -4,8 +4,8 @@ use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
 
-use helixflow_core::task::TestBackend;
-use helixflow_slint::{HelixFlow, create_task};
+use helixflow_core::task::blocking::TestBackend;
+use helixflow_slint::{HelixFlow, blocking::create_task};
 
 #[test]
 fn test_set_task_id() {
