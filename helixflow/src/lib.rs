@@ -10,13 +10,13 @@ pub fn run_helixflow() {
     debug!("Starting HelixFlow...");
     // let backend = Rc::new(SurrealDb::create().unwrap());
     let backend = Rc::new(SurrealDb::connect("127.0.0.1:8010").unwrap());
-    // let helixflow = HelixFlow::new().unwrap();
-    // let hf = helixflow.as_weak();
-    // let be = Rc::downgrade(&backend);
-    // helixflow.on_create_task(create_task(hf, be));
-    // helixflow.show().unwrap();
-    // slint::run_event_loop().unwrap();
-    // helixflow.hide().unwrap();
+    let helixflow = HelixFlow::new().unwrap();
+    let hf = helixflow.as_weak();
+    let be = Rc::downgrade(&backend);
+    helixflow.on_create_task(create_task(hf, be));
+    helixflow.show().unwrap();
+    slint::run_event_loop().unwrap();
+    helixflow.hide().unwrap();
 }
 
 #[cfg(target_arch = "wasm32")]
