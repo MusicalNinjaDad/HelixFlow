@@ -13,14 +13,16 @@ use helixflow_surreal::blocking::SurrealDb;
 
 #[test]
 fn test_slint_with_surreal() {
-    static PANIC: OnceLock<String> = OnceLock::new();
-    static ORIGINAL_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
+    // Slint's event_loop doesn't propogate panics from background tasks
+    //   so we need to actively track if any occur.
+    static PANICKED: OnceLock<bool> = OnceLock::new();
+    static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
         OnceLock::new();
-    let _ = ORIGINAL_HOOK.set(take_hook());
+    let _ = DEFAULT_HOOK.set(take_hook());
 
     panic::set_hook(Box::new(|info| {
-        ORIGINAL_HOOK.get().unwrap()(info);
-        PANIC.set(info.to_string()).unwrap_or_default();
+        DEFAULT_HOOK.get().unwrap()(info);
+        let _ = PANICKED.set(true);
     }));
 
     let backend = Rc::new(SurrealDb::create().unwrap());
@@ -52,7 +54,7 @@ fn test_slint_with_surreal() {
 
     slint::run_event_loop().unwrap();
 
-    assert!(PANIC.get().is_none());
+    assert!(PANICKED.get().is_none_or(|panicked| { !panicked }));
 
     assert!(helixflow.get_task_id().starts_with("Tasks:"));
     assert!(helixflow.get_create_enabled());
