@@ -71,7 +71,7 @@ pub mod blocking {
         pub fn create() -> anyhow::Result<Self> {
             debug!("Initialising tokio runtime");
             let rt = tokio::runtime::Builder::new_current_thread()
-                // .enable_all()
+                .enable_all()
                 .build()
                 .context("Initialising dedicated tokio runtime for surreal in memory database.")?;
             debug!("Initialising database");
@@ -92,7 +92,7 @@ pub mod blocking {
         pub fn connect(address: &str) -> Result<Self> {
             debug!("Initialising tokio runtime");
             let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_time()
+                .enable_all()
                 .build()
                 .context("Initialising dedicated tokio runtime for surreal in memory database.")?;
             debug!("Connecting to database");
