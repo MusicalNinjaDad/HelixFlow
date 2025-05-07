@@ -121,6 +121,7 @@ pub mod blocking {
     #[cfg(test)]
     mod tests {
         use std::str::FromStr;
+        use helixflow_core::task::blocking::TaskExt;
 
         use super::*;
 

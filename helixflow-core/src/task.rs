@@ -21,12 +21,16 @@ pub mod blocking {
         fn get(&self, id: ID) -> Result<Task<ID>>;
     }
 
-    impl<ID> Task<ID> {
+    pub trait TaskExt<ID> {
+        fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()>;
+    }
+
+    impl<ID> TaskExt<ID> for Task<ID> {
         /// Create this task in a given storage backend.
         /// `&mut` because the creation process will update the `Task.id`
         ///
         /// Don't forget to check for, and handle, any `Error`s, even though you don't need the `Ok`.
-        pub fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
+        fn create<B: StorageBackend<ID>>(&mut self, backend: &B) -> Result<()> {
             backend.create(self)?;
             Ok(())
         }

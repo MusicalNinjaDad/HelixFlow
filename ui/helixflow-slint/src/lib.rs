@@ -32,7 +32,7 @@ slint! {
 
 pub mod blocking {
     use super::*;
-    use helixflow_core::task::blocking::StorageBackend;
+    use helixflow_core::task::blocking::{StorageBackend, TaskExt};
 
     pub fn create_task<ID, BKEND>(
         helixflow_weak: slint::Weak<HelixFlow>,
