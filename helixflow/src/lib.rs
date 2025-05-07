@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use slint::ComponentHandle;
 use log::debug;
+use slint::ComponentHandle;
 
 use helixflow_slint::{HelixFlow, create_task};
 use helixflow_surreal::SurrealDb;
