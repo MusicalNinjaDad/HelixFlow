@@ -1,4 +1,8 @@
-use std::rc::Rc;
+use std::{
+    panic::{self, PanicHookInfo},
+    rc::Rc,
+    sync::OnceLock,
+};
 
 use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
@@ -9,6 +13,17 @@ use helixflow_slint::{HelixFlow, blocking::create_task};
 
 #[test]
 fn test_set_task_id() {
+    // Slint's event_loop doesn't propogate panics from background tasks
+    //   so we need to actively track if any occur.
+    static PANICKED: OnceLock<bool> = OnceLock::new();
+    static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
+        OnceLock::new();
+    let _ = DEFAULT_HOOK.set(panic::take_hook());
+
+    panic::set_hook(Box::new(|info| {
+        DEFAULT_HOOK.get().unwrap()(info);
+        let _ = PANICKED.set(true);
+    }));
     i_slint_backend_testing::init_integration_test_with_system_time();
 
     let helixflow = HelixFlow::new().unwrap();
@@ -37,6 +52,9 @@ fn test_set_task_id() {
     .unwrap();
 
     slint::run_event_loop().unwrap();
+
+    assert!(PANICKED.get().is_none_or(|panicked| { !panicked }));
+
     assert_eq!(helixflow.get_task_id(), "1");
     assert!(helixflow.get_create_enabled());
 }

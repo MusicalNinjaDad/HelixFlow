@@ -1,5 +1,5 @@
 use std::{
-    panic::{self, PanicHookInfo, take_hook},
+    panic::{self, PanicHookInfo},
     rc::Rc,
     sync::OnceLock,
 };
@@ -18,7 +18,7 @@ fn test_slint_with_surreal() {
     static PANICKED: OnceLock<bool> = OnceLock::new();
     static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
         OnceLock::new();
-    let _ = DEFAULT_HOOK.set(take_hook());
+    let _ = DEFAULT_HOOK.set(panic::take_hook());
 
     panic::set_hook(Box::new(|info| {
         DEFAULT_HOOK.get().unwrap()(info);
