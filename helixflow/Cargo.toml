@@ -13,6 +13,7 @@ log.workspace = true
 slint.workspace = true
 
 [dev-dependencies]
+futures = "0.3.31"
 helixflow-core.workspace = true
 i-slint-backend-testing.workspace = true
 

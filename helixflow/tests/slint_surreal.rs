@@ -1,4 +1,8 @@
-use std::rc::Rc;
+use std::{
+    panic::{self, PanicHookInfo, take_hook},
+    rc::Rc,
+    sync::OnceLock,
+};
 
 use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
@@ -9,6 +13,16 @@ use helixflow_surreal::blocking::SurrealDb;
 
 #[test]
 fn test_slint_with_surreal() {
+    static PANIC: OnceLock<String> = OnceLock::new();
+    static ORIGINAL_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
+        OnceLock::new();
+    let _ = ORIGINAL_HOOK.set(take_hook());
+
+    panic::set_hook(Box::new(|info| {
+        ORIGINAL_HOOK.get().unwrap()(info);
+        PANIC.set(info.to_string()).unwrap_or_default();
+    }));
+
     let backend = Rc::new(SurrealDb::create().unwrap());
 
     i_slint_backend_testing::init_integration_test_with_system_time();
@@ -37,6 +51,8 @@ fn test_slint_with_surreal() {
     .unwrap();
 
     slint::run_event_loop().unwrap();
+
+    assert!(PANIC.get().is_none());
 
     assert!(helixflow.get_task_id().starts_with("Tasks:"));
     assert!(helixflow.get_create_enabled());
