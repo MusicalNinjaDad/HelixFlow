@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 helixflow-surreal.workspace = true
 helixflow-slint.workspace = true
+log.workspace = true
 slint.workspace = true
 
 [dev-dependencies]
@@ -19,5 +20,4 @@ i-slint-backend-testing.workspace = true
 console_error_panic_hook.workspace = true
 console_log.workspace = true
 getrandom.workspace = true
-log.workspace = true
 wasm-bindgen.workspace = true

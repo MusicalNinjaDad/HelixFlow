@@ -3,9 +3,14 @@
 use std::rc::Rc;
 
 use anyhow::{Context, Ok, Result, anyhow};
+use log::debug;
 use surrealdb::{
     Connection, Surreal,
-    engine::local::{Db, Mem},
+    engine::{
+        local::{Db, Mem},
+        remote::ws::{Client, Ws},
+    },
+    opt::auth::Root,
     sql::Thing,
 };
 
@@ -61,16 +66,51 @@ impl<C: Connection> StorageBackend<Thing> for SurrealDb<C> {
 /// This is a blocking operation until the db is available.
 impl SurrealDb<Db> {
     pub fn create() -> anyhow::Result<Self> {
+        debug!("Initialising tokio runtime");
         let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
+            // .enable_all()
             .build()
             .context("Initialising dedicated tokio runtime for surreal in memory database.")?;
+        debug!("Initialising database");
         let db = rt
             .block_on(Surreal::new::<Mem>(()).into_future())
             .context("Initialising database")?;
+        debug!("Selecting database namespace");
         rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
             .context("Selecting database namespace")?;
+        debug!("Stuffing the runtime in an Rc");
         let runtime = Rc::new(rt);
+        debug!("Done connecting to database");
+        Ok(Self { db, rt: runtime })
+    }
+}
+
+impl SurrealDb<Client> {
+    pub fn connect(address: &str) -> Result<Self> {
+        debug!("Initialising tokio runtime");
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .context("Initialising dedicated tokio runtime for surreal in memory database.")?;
+        debug!("Connecting to database");
+        let db = rt
+            .block_on(Surreal::new::<Ws>(address).into_future())
+            .context("Connecting to database")?;
+        debug!("Signing in to database");
+        rt.block_on(
+            db.signin(Root {
+                username: "root",
+                password: "root",
+            })
+            .into_future(),
+        )
+        .context("Signing in to database")?;
+        debug!("Selecting database namespace");
+        rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
+            .context("Selecting database namespace")?;
+        debug!("Stuffing the runtime in an Rc");
+        let runtime = Rc::new(rt);
+        debug!("Done connecting to database");
         Ok(Self { db, rt: runtime })
     }
 }
@@ -96,6 +136,7 @@ mod tests {
             assert!(new_task.id.is_some());
         }
     }
+
     #[test]
     fn test_new_task_written_to_db() {
         {
@@ -122,4 +163,21 @@ mod tests {
             assert_eq!(format!("{}", err), "Invalid task ID: table:record");
         }
     }
+
+    // #[test]
+    // fn test_new_task_written_to_external_db() {
+    //     {
+    //         let mut new_task = Task {
+    //             name: "Test Task 2".into(),
+    //             id: None,
+    //             description: None,
+    //         };
+    //         let backend = SurrealDb::connect("localhost:8010").unwrap();
+    //         new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
+    //         let id = new_task.id.unwrap();
+    //         let stored_task: Task<Thing> = backend.get(id).unwrap();
+    //         assert_eq!(stored_task.name, new_task.name);
+    //         assert_eq!(stored_task.description, new_task.description);
+    //     }
+    // }
 }
