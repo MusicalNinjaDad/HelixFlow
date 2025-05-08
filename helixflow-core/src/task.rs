@@ -68,9 +68,6 @@ pub mod blocking {
 
     impl TaskExt for Task {
         /// Create this task in a given storage backend.
-        /// `&mut` because the creation process will update the `Task.id`
-        ///
-        /// Don't forget to check for, and handle, any `Error`s, even though you don't need the `Ok`.
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
             let created_task = backend.create(self)?;
             if &created_task == self {
@@ -189,78 +186,82 @@ pub mod blocking {
     }
 }
 
-// pub mod non_blocking {
-//     use async_trait::async_trait;
+pub mod non_blocking {
+    use async_trait::async_trait;
 
-//     use super::*;
+    use super::*;
 
-//     #[async_trait]
-//     pub trait TaskExt<ID, B>
-//     where
-//         B: StorageBackend<ID> + Send + Sync,
-//         ID: Send,
-//     {
-//         async fn create(&mut self, backend: &B) -> Result<()>;
-//     }
+    /// Provide an implementation of a storage backend.
+    #[async_trait]
+    pub trait StorageBackend {
+        /// Create a new task in the backend, update the `task.id` then return Ok(())
+        async fn create(&self, task: &Task) -> anyhow::Result<Task>;
+        // fn get(&self, id: ID) -> Result<Task<ID>>;
+    }
 
-//     #[async_trait]
-//     impl<ID, B> TaskExt<ID, B> for Task<ID>
-//     where
-//         B: StorageBackend<ID> + Send + Sync,
-//         ID: Send,
-//     {
-//         async fn create(&mut self, backend: &B) -> Result<()> {
-//             backend.create(self).await
-//         }
-//     }
+    #[async_trait]
+    pub trait TaskExt
+    where
+        Self: Sized,
+    {
+        async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> TaskResult<()>;
+    }
 
-//     /// Provide an implementation of a storage backend.
-//     #[async_trait]
-//     pub trait StorageBackend<ID> {
-//         /// Create a new task in the backend, update the `task.id` then return Ok(())
-//         async fn create(&self, task: &mut Task<ID>) -> Result<()>;
-//     }
+    #[async_trait]
+    impl TaskExt for Task {
+        /// Create this task in a given storage backend.
+        async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> TaskResult<()> {
+            let created_task = backend.create(self).await?;
+            if &created_task == self {
+                Ok(())
+            } else {
+                Err(TaskCreationError::Mismatch {
+                    expected: self.clone(),
+                    actual: created_task,
+                })
+            }
+        }
+    }
 
-//     #[derive(Clone, Copy)]
-//     pub struct TestBackend;
+    #[derive(Clone, Copy)]
+    pub struct TestBackend;
 
-//     /// Hardcoded cases to unit test the basic `Task` interface
-//     #[async_trait]
-//     impl StorageBackend<u32> for TestBackend {
-//         async fn create(&self, task: &mut Task<u32>) -> Result<()> {
-//             match task.name {
-//                 Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
-//                 _ => {
-//                     task.id = Some(1);
-//                     Ok(())
-//                 }
-//             }
-//         }
-//     }
+    /// Hardcoded cases to unit test the basic `Task` interface
+    #[async_trait]
+    impl StorageBackend for TestBackend {
+        async fn create(&self, task: &Task) -> anyhow::Result<Task> {
+            match task.name {
+                Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
+                Cow::Borrowed("MISMATCH") => {
+                    Ok(Task::new(task.name.clone(), task.description.clone()))
+                }
+                _ => Ok(task.clone()),
+            }
+        }
+    }
 
-//     #[cfg(test)]
-//     pub mod tests {
-//         use std::sync::Arc;
+    #[cfg(test)]
+    pub mod tests {
+        use std::sync::Arc;
 
-//         use super::*;
-//         use macro_rules_attribute::apply;
-//         use smol_macros::{test, Executor};
+        use super::*;
+        use macro_rules_attribute::apply;
+        use smol_macros::{Executor, test};
 
-//         #[apply(test)]
-//         async fn test_new_task(exec: &Executor<'_>) {
-//             let mut new_task = Task {
-//                 name: "Test Task 1".into(),
-//                 id: None,
-//                 description: None,
-//             };
-//             let backend = Arc::new(TestBackend);
-//             let be = Arc::downgrade(&backend);
-//             exec.spawn(async move {
-//                 let backend = be.upgrade().unwrap();
-//                 new_task.create(backend.as_ref()).await}).await.unwrap();
-//             // assert_eq!(new_task.name, "Test Task 1");
-//             // assert_eq!(new_task.description, None);
-//             // assert_eq!(new_task.id, Some(1));
-//         }
-//     }
-// }
+        #[apply(test)]
+        async fn test_new_task(exec: &Executor<'_>) {
+            let new_task = Task::new("Test Task 1", None);
+            let backend = Arc::new(TestBackend);
+            let be = Arc::downgrade(&backend);
+            exec.spawn(async move {
+                let backend = be.upgrade().unwrap();
+                new_task.create(backend.as_ref()).await
+            })
+            .await
+            .unwrap();
+            // assert_eq!(new_task.name, "Test Task 1");
+            // assert_eq!(new_task.description, None);
+            // assert_eq!(new_task.id, Some(1));
+        }
+    }
+}
