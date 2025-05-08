@@ -86,6 +86,10 @@ RUN dnf install -y \
     wayland-devel \
     xorg-x11-server-Xwayland
 
+# Chromium for headless wasm testing
+RUN dnf install -y \
+    chromium
+
 # ---
 # Final setup steps
 # ---

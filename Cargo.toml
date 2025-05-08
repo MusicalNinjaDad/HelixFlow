@@ -15,8 +15,8 @@ log = "0.4.27"
 serde = { version = "1.0.219" }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.0", features = ["kv-mem"] }
-tokio = { version = "1.44.2" }
 thiserror = "2.0.12"
+tokio = { version = "1.44.2" }
 uuid = { version = "1.16.0", features = ["v7", "js"] }
 
 # wasm
@@ -29,3 +29,4 @@ wasm-bindgen = { version = "0.2" }
 i-slint-backend-testing = "=1.11.0"
 smol-macros = "0.1.1"
 macro_rules_attribute = "0.2.0"
+wasm-bindgen-test = "0.3.50"

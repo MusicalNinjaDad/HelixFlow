@@ -113,10 +113,13 @@ pub mod blocking {
     #[cfg(test)]
     pub mod tests {
         use std::assert_matches::assert_matches;
+        use wasm_bindgen_test::*;
 
         use super::*;
 
-        #[test]
+        wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_new_task() {
             let new_task = Task::new("Test Task", None);
             assert_eq!(new_task.name, "Test Task");
@@ -125,7 +128,7 @@ pub mod blocking {
             assert_eq!(new_task.id.get_version(), Some(uuid::Version::SortRand));
         }
 
-        #[test]
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_new_task_blank() {
             let new_task = Task::new("", None);
             assert_eq!(new_task.name, "");
@@ -134,14 +137,14 @@ pub mod blocking {
             assert_eq!(new_task.id.get_version(), Some(uuid::Version::SortRand));
         }
 
-        #[test]
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_create_task() {
             let new_task = Task::new("Test Task 1", None);
             let backend = TestBackend;
             new_task.create(&backend).unwrap();
         }
 
-        #[test]
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_failed_to_create_task() {
             let new_task = Task::new("FAIL", None);
             let backend = TestBackend;
@@ -149,7 +152,7 @@ pub mod blocking {
             assert_matches!(err, TaskCreationError::BackendError(_))
         }
 
-        #[test]
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_mismatched_task_created() {
             let new_task = Task::new("MISMATCH", None);
             let backend = TestBackend;
