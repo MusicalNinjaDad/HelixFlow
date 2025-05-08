@@ -240,7 +240,7 @@ pub mod non_blocking {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(all(test,not(target_family="wasm")))]
     pub mod tests {
         use std::sync::Arc;
 
@@ -259,9 +259,27 @@ pub mod non_blocking {
             })
             .await
             .unwrap();
-            // assert_eq!(new_task.name, "Test Task 1");
-            // assert_eq!(new_task.description, None);
-            // assert_eq!(new_task.id, Some(1));
+        }
+    }
+
+    #[cfg(all(test,target_family="wasm"))]
+    pub mod wasm_tests {
+        use std::sync::Arc;
+
+        use super::*;
+        use wasm_bindgen_test::wasm_bindgen_test;
+
+        #[wasm_bindgen_test]
+        async fn test_new_task() {
+            let new_task = Task::new("Test Task 1", None);
+            let backend = Arc::new(TestBackend);
+            let be = Arc::downgrade(&backend);
+            async move {
+                let backend = be.upgrade().unwrap();
+                new_task.create(backend.as_ref()).await
+            }
+            .await
+            .unwrap();
         }
     }
 }
