@@ -7,5 +7,6 @@ edition = "2024"
 anyhow.workspace = true
 helixflow-core.workspace = true
 log.workspace = true
+serde = { workspace = true, features = ["derive"] }
 surrealdb.workspace = true
 tokio = { workspace = true, features = ["rt", "time"] }
