@@ -25,8 +25,12 @@ jobs:
       - uses: swatinem/rust-cache@v2
       - name: "Set up Rust"
         run: rustup show
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - name: "Test"
-        run: wasm-bindgen test --headless --chrome
+        run: wasm-pack test --headless --chrome
   lint:
     runs-on: ubuntu-latest
     steps:
