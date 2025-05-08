@@ -29,8 +29,11 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - name: "Test"
-        run: wasm-pack test --headless --chrome
+      # Need to run individually for each crate. See: https://github.com/rustwasm/wasm-pack/issues/642
+      - name: "Test helixflow-core"
+        run: |
+          cd helixflow-core
+          wasm-pack test --headless --chrome
   lint:
     runs-on: ubuntu-latest
     steps:
