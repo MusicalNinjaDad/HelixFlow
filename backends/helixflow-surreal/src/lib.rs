@@ -155,12 +155,17 @@ pub mod blocking {
         }
     }
 
+    /// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
+    /// `block_on()` will not run either, as rt cannot be idle.
     #[cfg(test)]
     mod tests {
         use helixflow_core::task::blocking::TaskExt;
         use std::str::FromStr;
+        use wasm_bindgen_test::*;
 
         use super::*;
+
+        wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
         #[test]
         fn test_new_task_id_updated() {
