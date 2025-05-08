@@ -10,5 +10,4 @@ serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 macro_rules_attribute.workspace = true
-smol.workspace = true
 smol-macros.workspace = true
