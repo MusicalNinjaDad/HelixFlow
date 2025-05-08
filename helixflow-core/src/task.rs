@@ -2,8 +2,8 @@
 
 use anyhow::{Ok, Result, anyhow};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use std::borrow::Cow;
+use uuid::Uuid;
 
 /// A Task
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -11,6 +11,30 @@ pub struct Task {
     pub name: Cow<'static, str>,
     pub id: Uuid,
     pub description: Option<Cow<'static, str>>,
+}
+
+impl Task {
+    /// Create a new `Task` with valid `id`, suitable for usage as database key.
+    ///
+    /// `name` & `Some(description)` must be of the same type to avoid the need to specify the
+    /// theoretical type of a `None` description.
+    ///
+    /// Even though `name` must be given, it may be an empty string `""` - semantically every
+    /// Task has a name, even if this is blank, but not every Task has a description.
+    pub fn new<S1>(name: S1, description: Option<S1>) -> Task
+    where
+        S1: Into<Cow<'static, str>>,
+    {
+        Task {
+            name: name.into(),
+            id: Uuid::now_v7(),
+            description: if let Some(desc) = description {
+                Some(desc.into())
+            } else {
+                None
+            },
+        }
+    }
 }
 
 pub mod blocking {
@@ -22,7 +46,10 @@ pub mod blocking {
         // fn get(&self, id: ID) -> Result<Task<ID>>;
     }
 
-    pub trait TaskExt where Self: Sized {
+    pub trait TaskExt
+    where
+        Self: Sized,
+    {
         fn create<B: StorageBackend>(&self, backend: &B) -> Result<Self>;
     }
 
@@ -44,9 +71,7 @@ pub mod blocking {
         fn create(&self, task: &Task) -> Result<Task> {
             match task.name {
                 Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
-                _ => {
-                    Ok(task.clone())
-                }
+                _ => Ok(task.clone()),
             }
         }
         // fn get(&self, id: u32) -> Result<Task<u32>> {
@@ -67,11 +92,25 @@ pub mod blocking {
 
         #[test]
         fn test_new_task() {
-            let new_task = Task {
-                name: "Test Task 1".into(),
-                id: Uuid::now_v7(),
-                description: None,
-            };
+            let new_task = Task::new("Test Task", None);
+            assert_eq!(new_task.name, "Test Task");
+            assert!(new_task.description.is_none());
+            assert!(!new_task.id.is_nil());
+            assert_eq!(new_task.id.get_version(), Some(uuid::Version::SortRand));
+        }
+
+        #[test]
+        fn test_new_task_blank() {
+            let new_task = Task::new("", None);
+            assert_eq!(new_task.name, "");
+            assert!(new_task.description.is_none());
+            assert!(!new_task.id.is_nil());
+            assert_eq!(new_task.id.get_version(), Some(uuid::Version::SortRand));
+        }
+
+        #[test]
+        fn test_create_task() {
+            let new_task = Task::new("Test Task 1", None);
             let backend = TestBackend;
             let created_task = new_task.create(&backend).unwrap();
             assert_eq!(created_task, new_task);
@@ -79,11 +118,7 @@ pub mod blocking {
 
         #[test]
         fn test_failed_to_create_task() {
-            let new_task = Task {
-                name: "FAIL".into(),
-                id: Uuid::now_v7(),
-                description: None,
-            };
+            let new_task = Task::new("FAIL", None);
             let backend = TestBackend;
             let err = new_task.create(&backend);
             assert!(err.is_err());
@@ -136,7 +171,6 @@ pub mod blocking {
 //             backend.create(self).await
 //         }
 //     }
-
 
 //     /// Provide an implementation of a storage backend.
 //     #[async_trait]
