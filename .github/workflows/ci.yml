@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  RUSTC_BOOTSTRAP: "1"
+
 jobs:
   test:
     runs-on: ubuntu-latest
