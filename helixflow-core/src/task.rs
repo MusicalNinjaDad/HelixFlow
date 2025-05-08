@@ -117,3 +117,75 @@ pub mod blocking {
         }
     }
 }
+
+pub mod non_blocking {
+    use async_trait::async_trait;
+
+    use super::*;
+
+    #[async_trait]
+    pub trait TaskExt<ID, B>
+    where
+        B: StorageBackend<ID> + Send + Sync,
+        ID: Send,
+    {
+        async fn create(&mut self, backend: &B) -> Result<()>;
+    }
+
+    #[async_trait]
+    impl<ID, B> TaskExt<ID, B> for Task<ID>
+    where
+        B: StorageBackend<ID> + Send + Sync,
+        ID: Send,
+    {
+        async fn create(&mut self, backend: &B) -> Result<()> {
+            backend.create(self).await
+        }
+    }
+
+
+    /// Provide an implementation of a storage backend.
+    #[async_trait]
+    pub trait StorageBackend<ID> {
+        /// Create a new task in the backend, update the `task.id` then return Ok(())
+        async fn create(&self, task: &mut Task<ID>) -> Result<()>;
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct TestBackend;
+
+    /// Hardcoded cases to unit test the basic `Task` interface
+    #[async_trait]
+    impl StorageBackend<u32> for TestBackend {
+        async fn create(&self, task: &mut Task<u32>) -> Result<()> {
+            match task.name {
+                Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
+                _ => {
+                    task.id = Some(1);
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub mod tests {
+        use super::*;
+        use macro_rules_attribute::apply;
+        use smol_macros::test;
+
+        #[apply(test)]
+        async fn test_new_task() {
+            let mut new_task = Task {
+                name: "Test Task 1".into(),
+                id: None,
+                description: None,
+            };
+            let backend = TestBackend;
+            let _ = new_task.create(&backend).await;
+            assert_eq!(new_task.name, "Test Task 1");
+            assert_eq!(new_task.description, None);
+            assert_eq!(new_task.id, Some(1));
+        }
+    }
+}

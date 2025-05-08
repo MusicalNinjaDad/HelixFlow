@@ -10,6 +10,7 @@ helixflow-surreal = { path = "backends/helixflow-surreal" }
 
 # main dependencies - only specify features if required to define default actions
 anyhow = "1.0.98"
+async-trait = "0.1.88"
 log = "0.4.27"
 serde = { version = "1.0.219" }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
@@ -24,3 +25,6 @@ wasm-bindgen = { version = "0.2" }
 
 # dev-only dependencies
 i-slint-backend-testing = "=1.11.0"
+smol = "2.0.2"
+smol-macros = "0.1.1"
+macro_rules_attribute = "0.2.0"

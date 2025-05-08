@@ -5,4 +5,10 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+async-trait.workspace = true
 serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+macro_rules_attribute.workspace = true
+smol.workspace = true
+smol-macros.workspace = true
