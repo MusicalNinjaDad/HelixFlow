@@ -16,6 +16,7 @@ serde = { version = "1.0.219" }
 slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.0", features = ["kv-mem"] }
 tokio = { version = "1.44.2" }
+thiserror = "2.0.12"
 uuid = { version = "1.16.0", features = ["v7", "js"] }
 
 # wasm

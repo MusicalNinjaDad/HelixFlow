@@ -1,6 +1,6 @@
 //! The fundamental `Task` building block and related functions.
 
-use anyhow::{Ok, Result, anyhow};
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use uuid::Uuid;
@@ -37,12 +37,25 @@ impl Task {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum TaskCreationError {
+    // The #[from] attribute automatically creates a From conversion so that any error
+    // convertible to anyhow::Error (which includes MyBackendError) is wrapped.
+    #[error("backend error: {0}")]
+    BackendError(#[from] anyhow::Error),
+
+    #[error("created task does not match expectations: expected {expected:?}, got {actual:?}")]
+    Mismatch { expected: Task, actual: Task },
+}
+
+pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
+
 pub mod blocking {
     use super::*;
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
         /// Create a new task in the backend, update the `task.id` then return Ok(())
-        fn create(&self, task: &Task) -> Result<Task>;
+        fn create(&self, task: &Task) -> anyhow::Result<Task>;
         // fn get(&self, id: ID) -> Result<Task<ID>>;
     }
 
@@ -50,7 +63,7 @@ pub mod blocking {
     where
         Self: Sized,
     {
-        fn create<B: StorageBackend>(&self, backend: &B) -> Result<Self>;
+        fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()>;
     }
 
     impl TaskExt for Task {
@@ -58,8 +71,16 @@ pub mod blocking {
         /// `&mut` because the creation process will update the `Task.id`
         ///
         /// Don't forget to check for, and handle, any `Error`s, even though you don't need the `Ok`.
-        fn create<B: StorageBackend>(&self, backend: &B) -> Result<Task> {
-            backend.create(self)
+        fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
+            let created_task = backend.create(self)?;
+            if &created_task == self {
+                Ok(())
+            } else {
+                Err(TaskCreationError::Mismatch {
+                    expected: self.clone(),
+                    actual: created_task,
+                })
+            }
         }
     }
 
@@ -68,9 +89,12 @@ pub mod blocking {
 
     /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend for TestBackend {
-        fn create(&self, task: &Task) -> Result<Task> {
+        fn create(&self, task: &Task) -> anyhow::Result<Task> {
             match task.name {
                 Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
+                Cow::Borrowed("MISMATCH") => {
+                    Ok(Task::new(task.name.clone(), task.description.clone()))
+                }
                 _ => Ok(task.clone()),
             }
         }
@@ -88,6 +112,8 @@ pub mod blocking {
 
     #[cfg(test)]
     pub mod tests {
+        use std::assert_matches::assert_matches;
+
         use super::*;
 
         #[test]
@@ -112,16 +138,29 @@ pub mod blocking {
         fn test_create_task() {
             let new_task = Task::new("Test Task 1", None);
             let backend = TestBackend;
-            let created_task = new_task.create(&backend).unwrap();
-            assert_eq!(created_task, new_task);
+            new_task.create(&backend).unwrap();
         }
 
         #[test]
         fn test_failed_to_create_task() {
             let new_task = Task::new("FAIL", None);
             let backend = TestBackend;
-            let err = new_task.create(&backend);
-            assert!(err.is_err());
+            let err = new_task.create(&backend).unwrap_err();
+            assert_matches!(err, TaskCreationError::BackendError(_))
+        }
+
+        #[test]
+        fn test_mismatched_task_created() {
+            let new_task = Task::new("MISMATCH", None);
+            let backend = TestBackend;
+            let err = new_task.create(&backend).unwrap_err();
+            assert_matches!(
+                err,
+                TaskCreationError::Mismatch {
+                    expected: _,
+                    actual: _
+                }
+            )
         }
 
         // #[test]
