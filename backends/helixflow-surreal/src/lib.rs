@@ -11,11 +11,10 @@ use surrealdb::{
         remote::ws::{Client, Ws},
     },
     opt::auth::Root,
-    sql::{Thing, Uuid, Id},
+    sql::{Id, Thing, Uuid},
 };
 
 use serde::{Deserialize, Serialize};
-
 
 use helixflow_core::task::Task;
 
@@ -23,7 +22,7 @@ pub mod blocking {
     use std::borrow::Cow;
 
     use super::*;
-    use helixflow_core::task::{TaskResult, blocking::StorageBackend};
+    use helixflow_core::task::{TaskCreationError, TaskResult, blocking::StorageBackend};
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
     /// This requires some form of instantiation function, the exact specification of which will depend
@@ -42,10 +41,35 @@ pub mod blocking {
     }
 
     #[derive(Debug, Serialize, Deserialize)]
-    struct TaskNoId {
+    struct SurrealTask {
         name: Cow<'static, str>,
         id: Thing,
         description: Option<Cow<'static, str>>,
+    }
+
+    impl TryFrom<SurrealTask> for Task {
+        type Error = anyhow::Error;
+        fn try_from(task: SurrealTask) -> Result<Task, Self::Error> {
+            let id = match task.id.id {
+                Id::Uuid(id) => Ok(id.into()),
+                _ => Err(anyhow!("Not a valid UUID")),
+            };
+            Ok(Task {
+                name: task.name,
+                id: id?,
+                description: task.description,
+            })
+        }
+    }
+
+    impl From<&Task> for SurrealTask {
+        fn from(task: &Task) -> Self {
+            SurrealTask {
+                name: task.name.clone(),
+                id: Thing::from(("Tasks", Id::Uuid(task.id.into()))),
+                description: task.description.clone(),
+            }
+        }
     }
 
     /// SurrealDb returns a `Thing` as `id`.
@@ -55,23 +79,15 @@ pub mod blocking {
     impl<C: Connection> StorageBackend for SurrealDb<C> {
         fn create(&self, task: &Task) -> anyhow::Result<Task> {
             dbg!(task);
-            let taskuuid: Uuid = task.id.into();
-            let taskid: Id = taskuuid.into();
-            let taskthing: Thing = Thing::from(("Tasks", taskid));
-            let t = TaskNoId {name: task.name.clone(), id: taskthing, description: task.description.clone()};
-            let dbtask: TaskNoId = self
+            let dbtask: SurrealTask = self
                 .rt
-                .block_on(self.db.create("Tasks").content(t).into_future())?
+                .block_on(self.db.create("Tasks").content(SurrealTask::from(task)).into_future())?
                 .with_context(|| format!("Creating new record for {:#?} in SurrealDb", task))?;
             // TODO: Wrangle id (into a couple of `Cow`s?) so it can be passed directly to
             // `.select<O>(&self, resource: impl surrealdb::opt::IntoResource<O>)` without
             // ownership and conversion concerns. (Or only partially, to avoid taking time now, and take
             // the time to clone/convert only when needed, e.g. on the first attempt to select?)
-            let checktask = Task {
-                name: dbtask.name,
-                id: if let Id::Uuid(dbuuid) = dbtask.id.id {dbuuid.into()} else {Uuid::new_v7().into()},
-                description: dbtask.description
-            };
+            let checktask = dbtask.try_into()?;
             dbg!(&checktask);
             Ok(checktask)
         }
