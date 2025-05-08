@@ -242,7 +242,7 @@ pub mod non_blocking {
 
     #[cfg(all(test,not(target_family="wasm")))]
     pub mod tests {
-        use std::sync::Arc;
+        use std::{assert_matches::assert_matches, sync::Arc};
 
         use super::*;
         use macro_rules_attribute::apply;
@@ -260,11 +260,35 @@ pub mod non_blocking {
             .await
             .unwrap();
         }
+
+        #[apply(test)]
+        async fn test_failed_to_create_task() {
+            let new_task = Task::new("FAIL", None);
+            let backend = TestBackend;
+            let err = new_task.create(&backend).await.unwrap_err();
+            assert_matches!(err, TaskCreationError::BackendError(_))
+        }
+
+        #[apply(test)]
+        async fn test_mismatched_task_created() {
+            let new_task = Task::new("MISMATCH", None);
+            let backend = TestBackend;
+            let err = new_task.create(&backend).await.unwrap_err();
+            assert_matches!(
+                err,
+                TaskCreationError::Mismatch {
+                    expected: _,
+                    actual: _
+                }
+            )
+        }
+
     }
 
     #[cfg(all(test,target_family="wasm"))]
     pub mod wasm_tests {
         use std::sync::Arc;
+        use std::assert_matches::assert_matches;
 
         use super::*;
         use wasm_bindgen_test::wasm_bindgen_test;
@@ -280,6 +304,28 @@ pub mod non_blocking {
             }
             .await
             .unwrap();
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_failed_to_create_task() {
+            let new_task = Task::new("FAIL", None);
+            let backend = TestBackend;
+            let err = new_task.create(&backend).await.unwrap_err();
+            assert_matches!(err, TaskCreationError::BackendError(_))
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_mismatched_task_created() {
+            let new_task = Task::new("MISMATCH", None);
+            let backend = TestBackend;
+            let err = new_task.create(&backend).await.unwrap_err();
+            assert_matches!(
+                err,
+                TaskCreationError::Mismatch {
+                    expected: _,
+                    actual: _
+                }
+            )
         }
     }
 }
