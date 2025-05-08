@@ -18,6 +18,15 @@ jobs:
           tool: cargo-nextest
       - name: "Test"
         run: cargo nextest run
+  test-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swatinem/rust-cache@v2
+      - name: "Set up Rust"
+        run: rustup show
+      - name: "Test"
+        run: wasm-bindgen test --headless --chrome
   lint:
     runs-on: ubuntu-latest
     steps:
