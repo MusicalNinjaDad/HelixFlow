@@ -83,10 +83,6 @@ pub mod blocking {
                 .rt
                 .block_on(self.db.create("Tasks").content(SurrealTask::from(task)).into_future())?
                 .with_context(|| format!("Creating new record for {:#?} in SurrealDb", task))?;
-            // TODO: Wrangle id (into a couple of `Cow`s?) so it can be passed directly to
-            // `.select<O>(&self, resource: impl surrealdb::opt::IntoResource<O>)` without
-            // ownership and conversion concerns. (Or only partially, to avoid taking time now, and take
-            // the time to clone/convert only when needed, e.g. on the first attempt to select?)
             let checktask = dbtask.try_into()?;
             dbg!(&checktask);
             Ok(checktask)
