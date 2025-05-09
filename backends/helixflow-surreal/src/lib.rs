@@ -165,7 +165,7 @@ pub mod blocking {
         wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
         #[test]
-        fn test_new_task_id_updated() {
+        fn test_new_task() {
             {
                 let new_task = Task::new("Test Task 1", None);
                 let backend = SurrealDb::create().unwrap();
