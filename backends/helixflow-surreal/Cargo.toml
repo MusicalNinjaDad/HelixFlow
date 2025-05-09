@@ -5,9 +5,12 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+async-trait.workspace = true
 helixflow-core.workspace = true
 log.workspace = true
+macro_rules_attribute.workspace = true
 serde = { workspace = true, features = ["derive"] }
+smol-macros.workspace = true
 surrealdb.workspace = true
 tokio = { workspace = true, features = ["rt", "time"] }
 
