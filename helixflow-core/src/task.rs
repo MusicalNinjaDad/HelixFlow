@@ -169,7 +169,7 @@ pub mod blocking {
             )
         }
 
-        #[test]
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_get_task() {
             let backend = TestBackend;
             let id = uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36");
@@ -184,7 +184,7 @@ pub mod blocking {
             )
         }
 
-        #[test]
+        #[wasm_bindgen_test(unsupported = test)]
         fn test_get_invalid_task() {
             let backend = TestBackend;
             let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
