@@ -52,18 +52,13 @@ pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
 
 pub mod blocking {
     use super::*;
-    /// Provide an implementation of a storage backend.
-    pub trait StorageBackend {
-        /// Create a new task in the backend, update the `task.id` then return Ok(())
-        fn create(&self, task: &Task) -> anyhow::Result<Task>;
-        // fn get(&self, id: ID) -> Result<Task<ID>>;
-    }
 
     pub trait CRUD
     where
         Self: Sized,
     {
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()>;
+        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Task>;
     }
 
     impl CRUD for Task {
@@ -79,6 +74,16 @@ pub mod blocking {
                 })
             }
         }
+        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Task> {
+            Ok(backend.get(id)?)
+        }
+    }
+
+    /// Provide an implementation of a storage backend.
+    pub trait StorageBackend {
+        /// Create a new task in the backend, update the `task.id` then return Ok(())
+        fn create(&self, task: &Task) -> anyhow::Result<Task>;
+        fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
     }
 
     #[derive(Clone, Copy)]
@@ -95,22 +100,23 @@ pub mod blocking {
                 _ => Ok(task.clone()),
             }
         }
-        // fn get(&self, id: u32) -> Result<Task<u32>> {
-        //     match id {
-        //         1 => Ok(Task {
-        //             name: "Task 1".into(),
-        //             id: Some(id),
-        //             description: None,
-        //         }),
-        //         _ => Err(anyhow!("Invalid task ID: {}", id)),
-        //     }
-        // }
+        fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
+            match id.to_string().as_str() {
+                "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
+                    name: "Task 1".into(),
+                    id: id.clone(),
+                    description: None,
+                }),
+                _ => Err(anyhow!("Unknown task ID: {}", id)),
+            }
+        }
     }
 
     #[cfg(test)]
     pub mod tests {
         use std::assert_matches::assert_matches;
         use wasm_bindgen_test::*;
+        use uuid::uuid;
 
         use super::*;
 
@@ -163,26 +169,28 @@ pub mod blocking {
             )
         }
 
-        // #[test]
-        // fn test_get_task() {
-        //     let backend = TestBackend;
-        //     let task = backend.get(1).unwrap();
-        //     assert_eq!(
-        //         task,
-        //         Task {
-        //             name: "Task 1".into(),
-        //             id: Some(1),
-        //             description: None
-        //         }
-        //     )
-        // }
+        #[test]
+        fn test_get_task() {
+            let backend = TestBackend;
+            let id = uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36");
+            let task = Task::get(&backend, &id).unwrap();
+            assert_eq!(
+                task,
+                Task {
+                    name: "Task 1".into(),
+                    id: id,
+                    description: None
+                }
+            )
+        }
 
-        // #[test]
-        // fn test_get_invalid_task() {
-        //     let backend = TestBackend;
-        //     let err = backend.get(2).unwrap_err();
-        //     assert_eq!(format!("{}", err), "Invalid task ID: 2");
-        // }
+        #[test]
+        fn test_get_invalid_task() {
+            let backend = TestBackend;
+            let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
+            let err = backend.get(&id).unwrap_err();
+            assert_eq!(format!("{}", err), "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2");
+        }
     }
 }
 
