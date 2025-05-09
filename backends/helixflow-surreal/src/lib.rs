@@ -11,7 +11,8 @@ use surrealdb::{
         remote::ws::{Client, Ws},
     },
     opt::auth::Root,
-    sql::{Id, Thing, Uuid},
+    sql::{Id, Thing},
+    Uuid,
 };
 
 use serde::{Deserialize, Serialize};
@@ -87,15 +88,15 @@ pub mod blocking {
             dbg!(&checktask);
             Ok(checktask)
         }
-        // fn get(&self, id: Thing) -> Result<Task<Thing>> {
-        //     self.rt
-        //         .block_on(
-        //             self.db
-        //                 .select((id.tb.clone(), id.id.to_raw()))
-        //                 .into_future(),
-        //         )?
-        //         .ok_or_else(|| anyhow!("Invalid task ID: {}", id))
-        // }
+        fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
+            let dbtask: Option<SurrealTask> = self.rt
+                .block_on(
+                    self.db
+                        .select(("Tasks", id.clone()))
+                        .into_future(),
+                )?;
+            if let Some(task) = dbtask {Ok(task.try_into()?)} else {Err(anyhow!("Unknown task ID: {}", id))}
+        }
     }
 
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
@@ -168,36 +169,30 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 1", None);
                 let backend = SurrealDb::create().unwrap();
-                new_task.create(&backend).unwrap();
+                new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
             }
         }
 
-        // #[test]
-        // fn test_new_task_written_to_db() {
-        //     {
-        //         let mut new_task = Task {
-        //             name: "Test Task 2".into(),
-        //             id: None,
-        //             description: None,
-        //         };
-        //         let backend = SurrealDb::create().unwrap();
-        //         new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
-        //         let id = new_task.id.unwrap();
-        //         let stored_task: Task<Thing> = backend.get(id).unwrap();
-        //         assert_eq!(stored_task.name, new_task.name);
-        //         assert_eq!(stored_task.description, new_task.description);
-        //     }
-        // }
+        #[test]
+        fn test_new_task_written_to_db() {
+            {
+                let new_task = Task::new("Test Task 2", None);
+                let backend = SurrealDb::create().unwrap();
+                new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
+                let stored_task = backend.get(&new_task.id).unwrap();
+                assert_eq!(stored_task, new_task);
+            }
+        }
 
-        // #[test]
-        // fn test_get_invalid_task() {
-        //     {
-        //         let backend = SurrealDb::create().unwrap();
-        //         let id = Thing::from_str("table:record").unwrap();
-        //         let err = backend.get(id).unwrap_err();
-        //         assert_eq!(format!("{}", err), "Invalid task ID: table:record");
-        //     }
-        // }
+        #[test]
+        fn test_get_invalid_task() {
+            {
+                let backend = SurrealDb::create().unwrap();
+                let id = Uuid::now_v7();
+                let err = backend.get(&id).unwrap_err();
+                assert_eq!(format!("{}", err), format!("Unknown task ID: {}", id));
+            }
+        }
 
         // #[test]
         // fn test_new_task_written_to_external_db() {
