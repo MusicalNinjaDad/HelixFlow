@@ -155,7 +155,7 @@ pub mod blocking {
     /// `block_on()` will not run either, as rt cannot be idle.
     #[cfg(test)]
     mod tests {
-        use helixflow_core::task::blocking::TaskExt;
+        use helixflow_core::task::blocking::CRUD;
         use std::str::FromStr;
         use wasm_bindgen_test::*;
 

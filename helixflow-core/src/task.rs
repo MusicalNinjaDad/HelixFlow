@@ -59,14 +59,14 @@ pub mod blocking {
         // fn get(&self, id: ID) -> Result<Task<ID>>;
     }
 
-    pub trait TaskExt
+    pub trait CRUD
     where
         Self: Sized,
     {
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()>;
     }
 
-    impl TaskExt for Task {
+    impl CRUD for Task {
         /// Create this task in a given storage backend.
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
             let created_task = backend.create(self)?;
@@ -200,7 +200,7 @@ pub mod non_blocking {
     }
 
     #[async_trait]
-    pub trait TaskExt
+    pub trait CRUD
     where
         Self: Sized,
     {
@@ -208,7 +208,7 @@ pub mod non_blocking {
     }
 
     #[async_trait]
-    impl TaskExt for Task {
+    impl CRUD for Task {
         /// Create this task in a given storage backend.
         async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> TaskResult<()> {
             let created_task = backend.create(self).await?;
