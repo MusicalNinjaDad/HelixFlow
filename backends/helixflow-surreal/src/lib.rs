@@ -281,16 +281,15 @@ pub mod non_blocking {
         use smol_macros::{Executor, test};
 
         use super::*;
-        
 
-        #[apply(test)]
-        async fn test_new_task(exec: &Executor<'_>) {
+        #[tokio::test]
+        async fn test_new_task() {
             let new_task = Task::new("Test Task 1", None);
             let backend = Arc::new(SurrealDb::create().await.unwrap());
             let be = Arc::downgrade(&backend);
-            exec.spawn(async move {
+            tokio::spawn(async move {
                 let backend = be.upgrade().unwrap();
-                new_task.create(backend.as_ref()).await
+                new_task.create(backend.as_ref()).await.unwrap();
             })
             .await
             .unwrap();
