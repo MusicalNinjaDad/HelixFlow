@@ -56,6 +56,8 @@ fn test_slint_with_surreal() {
 
     assert!(PANICKED.get().is_none_or(|panicked| { !panicked }));
 
-    assert!(helixflow.get_task_id().starts_with("Tasks:"));
+    let task_uuid = uuid::Uuid::parse_str(&helixflow.get_task_id()).unwrap();
+    assert!(!task_uuid.is_nil());
+    assert_eq!(task_uuid.get_version(), Some(uuid::Version::SortRand));
     assert!(helixflow.get_create_enabled());
 }
