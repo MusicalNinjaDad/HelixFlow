@@ -275,10 +275,7 @@ pub mod non_blocking {
     #[cfg(all(test, not(target_family = "wasm")))]
     mod tests {
         use helixflow_core::task::non_blocking::CRUD;
-        use std::{str::FromStr, sync::Arc};
-
-        use macro_rules_attribute::apply;
-        use smol_macros::{Executor, test};
+        use std::sync::Arc;
 
         use super::*;
 
@@ -332,5 +329,25 @@ pub mod non_blocking {
         //         assert_eq!(stored_task.description, new_task.description);
         //     }
         // }
+    }
+
+    #[cfg(all(test,target_family="wasm"))]
+    // #[cfg(test)]
+    pub mod wasm_tests {
+        use std::sync::Arc;
+        use helixflow_core::task::non_blocking::CRUD;
+        use wasm_bindgen_futures::{future_to_promise, spawn_local};
+
+        use super::*;
+        use wasm_bindgen_test::wasm_bindgen_test;
+
+        #[wasm_bindgen_test]
+        async fn test_new_task() {
+            let new_task = Task::new("Test Task 1", None);
+            // let backend = Arc::new(SurrealDb::create().await.unwrap());
+            // let be = Arc::downgrade(&backend);
+            // let backend = be.upgrade().unwrap();
+            // new_task.create(backend.as_ref()).await.unwrap();
+        }
     }
 }
