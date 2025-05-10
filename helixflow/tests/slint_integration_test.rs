@@ -11,8 +11,6 @@ use slint::platform::PointerEventButton;
 use helixflow_core::task::blocking::TestBackend;
 use helixflow_slint::{HelixFlow, blocking::create_task};
 
-use uuid::uuid;
-
 #[test]
 fn test_set_task_id() {
     // Slint's event_loop doesn't propogate panics from background tasks

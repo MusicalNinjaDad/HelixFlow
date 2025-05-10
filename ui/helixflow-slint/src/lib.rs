@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Weak};
+use std::rc::Weak;
 
 use slint::slint;
 
@@ -32,7 +32,7 @@ slint! {
 
 pub mod blocking {
     use super::*;
-    use helixflow_core::task::blocking::{StorageBackend, CRUD};
+    use helixflow_core::task::blocking::{CRUD, StorageBackend};
 
     pub fn create_task<BKEND>(
         helixflow_weak: slint::Weak<HelixFlow>,

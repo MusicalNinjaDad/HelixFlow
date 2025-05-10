@@ -115,8 +115,8 @@ pub mod blocking {
     #[cfg(test)]
     pub mod tests {
         use std::assert_matches::assert_matches;
-        use wasm_bindgen_test::*;
         use uuid::uuid;
+        use wasm_bindgen_test::*;
 
         use super::*;
 
@@ -189,7 +189,10 @@ pub mod blocking {
             let backend = TestBackend;
             let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
             let err = backend.get(&id).unwrap_err();
-            assert_eq!(format!("{}", err), "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2");
+            assert_eq!(
+                format!("{}", err),
+                "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2"
+            );
         }
     }
 }
@@ -248,7 +251,7 @@ pub mod non_blocking {
         }
     }
 
-    #[cfg(all(test,not(target_family="wasm")))]
+    #[cfg(all(test, not(target_family = "wasm")))]
     pub mod tests {
         use std::{assert_matches::assert_matches, sync::Arc};
 
@@ -290,13 +293,12 @@ pub mod non_blocking {
                 }
             )
         }
-
     }
 
-    #[cfg(all(test,target_family="wasm"))]
+    #[cfg(all(test, target_family = "wasm"))]
     pub mod wasm_tests {
-        use std::sync::Arc;
         use std::assert_matches::assert_matches;
+        use std::sync::Arc;
 
         use super::*;
         use wasm_bindgen_test::wasm_bindgen_test;

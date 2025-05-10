@@ -51,10 +51,9 @@ impl From<&Task> for SurrealTask {
 }
 
 pub mod blocking {
-    use std::borrow::Cow;
 
     use super::*;
-    use helixflow_core::task::{TaskCreationError, TaskResult, blocking::StorageBackend};
+    use helixflow_core::task::blocking::StorageBackend;
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
     /// This requires some form of instantiation function, the exact specification of which will depend
@@ -162,8 +161,6 @@ pub mod blocking {
     #[cfg(test)]
     mod tests {
         use helixflow_core::task::blocking::CRUD;
-        use std::str::FromStr;
-        use wasm_bindgen_test::*;
 
         use super::*;
 
@@ -219,11 +216,10 @@ pub mod blocking {
 }
 
 pub mod non_blocking {
-    use std::borrow::Cow;
 
     use super::*;
     use async_trait::async_trait;
-    use helixflow_core::task::{TaskCreationError, TaskResult, non_blocking::StorageBackend};
+    use helixflow_core::task::non_blocking::StorageBackend;
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
     /// This requires some form of instantiation function, the exact specification of which will depend
@@ -331,11 +327,11 @@ pub mod non_blocking {
         // }
     }
 
-    #[cfg(all(test,target_family="wasm"))]
+    #[cfg(all(test, target_family = "wasm"))]
     // #[cfg(test)]
     pub mod wasm_tests {
-        use std::sync::Arc;
         use helixflow_core::task::non_blocking::CRUD;
+        use std::sync::Arc;
         use wasm_bindgen_futures::{future_to_promise, spawn_local};
 
         use super::*;
