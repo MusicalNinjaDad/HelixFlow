@@ -28,11 +28,7 @@ impl Task {
         Task {
             name: name.into(),
             id: Uuid::now_v7(),
-            description: if let Some(desc) = description {
-                Some(desc.into())
-            } else {
-                None
-            },
+            description: description.map(|desc| desc.into()),
         }
     }
 }
@@ -45,7 +41,10 @@ pub enum TaskCreationError {
     BackendError(#[from] anyhow::Error),
 
     #[error("created task does not match expectations: expected {expected:?}, got {actual:?}")]
-    Mismatch { expected: Task, actual: Task },
+    Mismatch {
+        expected: Box<Task>,
+        actual: Box<Task>,
+    },
 }
 
 pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
@@ -69,8 +68,8 @@ pub mod blocking {
                 Ok(())
             } else {
                 Err(TaskCreationError::Mismatch {
-                    expected: self.clone(),
-                    actual: created_task,
+                    expected: Box::new(self.clone()),
+                    actual: Box::new(created_task),
                 })
             }
         }
@@ -104,7 +103,7 @@ pub mod blocking {
             match id.to_string().as_str() {
                 "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
                     name: "Task 1".into(),
-                    id: id.clone(),
+                    id: *id,
                     description: None,
                 }),
                 _ => Err(anyhow!("Unknown task ID: {}", id)),
@@ -227,8 +226,8 @@ pub mod non_blocking {
                 Ok(())
             } else {
                 Err(TaskCreationError::Mismatch {
-                    expected: self.clone(),
-                    actual: created_task,
+                    expected: Box::new(self.clone()),
+                    actual: Box::new(created_task),
                 })
             }
         }

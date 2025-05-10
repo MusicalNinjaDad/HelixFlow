@@ -46,7 +46,7 @@ pub mod blocking {
             let backend = backend.upgrade().unwrap();
             helixflow.set_create_enabled(false);
             let task_name: String = helixflow.get_task_name().into();
-            let task = Task::new::<String>(task_name.into(), None);
+            let task = Task::new(task_name, None);
             task.create(backend.as_ref()).unwrap();
             let task_id = task.id;
             helixflow.set_task_id(format!("{task_id}").into());

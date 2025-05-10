@@ -94,7 +94,7 @@ pub mod blocking {
         fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
             let dbtask: Option<SurrealTask> = self
                 .rt
-                .block_on(self.db.select(("Tasks", id.clone())).into_future())?;
+                .block_on(self.db.select(("Tasks", *id)).into_future())?;
             if let Some(task) = dbtask {
                 Ok(task.try_into()?)
             } else {
