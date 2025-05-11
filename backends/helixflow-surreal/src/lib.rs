@@ -164,7 +164,6 @@ pub mod blocking {
     /// `block_on()` will not run either, as rt cannot be idle.
     #[cfg(test)]
     mod tests {
-        use helixflow_core::task::blocking::CRUD;
 
         use super::*;
 
@@ -175,7 +174,7 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 1", None);
                 let backend = SurrealDb::new().unwrap();
-                new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
+                backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
             }
         }
 
@@ -184,14 +183,14 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 2", None);
                 let backend = SurrealDb::new().unwrap();
-                new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
+                backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
                 let stored_task = backend.get(&new_task.id).unwrap();
                 assert_eq!(stored_task, new_task);
             }
         }
 
         #[test]
-        fn test_get_invalid_task() {
+        fn test_get_not_found() {
             {
                 let backend = SurrealDb::new().unwrap();
                 let id = Uuid::now_v7();
