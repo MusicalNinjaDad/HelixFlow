@@ -19,6 +19,10 @@ use serde::{Deserialize, Serialize};
 use helixflow_core::task::{Task, TaskCreationError, TaskResult};
 
 #[derive(Debug, Serialize, Deserialize)]
+/// SurrealDb returns a `Thing` as `id`.
+///
+/// A `Thing` is a wierd SurrealDb Struct with a `tb` (= "table") and `id` field,
+/// both as owned `String`s :-x (!!)
 struct SurrealTask {
     name: Cow<'static, str>,
     id: Thing,
@@ -73,10 +77,6 @@ pub mod blocking {
         rt: Rc<tokio::runtime::Runtime>,
     }
 
-    /// SurrealDb returns a `Thing` as `id`.
-    ///
-    /// A `Thing` is a wierd SurrealDb Struct with a `tb` (= "table") and `id` field,
-    /// both as owned `String`s :-x (!!)
     impl<C: Connection> StorageBackend for SurrealDb<C> {
         fn create(&self, task: &Task) -> anyhow::Result<Task> {
             dbg!(task);
@@ -93,6 +93,7 @@ pub mod blocking {
             dbg!(&checktask);
             Ok(checktask)
         }
+
         fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
             let dbtask: Option<SurrealTask> = self
                 .rt
@@ -128,6 +129,7 @@ pub mod blocking {
         }
     }
 
+    /// Connect via WebSocket to given address, auth as root, on HelixFlow:HelixFlow (ns:db)
     impl SurrealDb<Client> {
         pub fn connect(address: &str) -> Result<Self> {
             debug!("Initialising tokio runtime");
@@ -290,6 +292,8 @@ pub mod non_blocking {
             .unwrap();
         }
 
+        // Not bothered to add .get to non-blocking yet ... as we are using blocking in current app
+
         // #[test]
         // fn test_new_task_written_to_db() {
         //     {
@@ -331,6 +335,9 @@ pub mod non_blocking {
 
     #[cfg(all(test, target_family = "wasm"))]
     // #[cfg(test)]
+
+    /// Can't find a way to get wasm to play nicley with tokio inside anything other than
+    /// a global tokio runtime ...
     pub mod wasm_tests {
         use helixflow_core::task::non_blocking::CRUD;
         use std::sync::Arc;
