@@ -9,7 +9,7 @@ use helixflow_surreal::blocking::SurrealDb;
 
 pub fn run_helixflow() {
     debug!("Starting HelixFlow...");
-    let backend = Rc::new(SurrealDb::create().unwrap());
+    let backend = Rc::new(SurrealDb::new().unwrap());
     // let backend = Rc::new(SurrealDb::connect("127.0.0.1:8010").unwrap());
     let helixflow = HelixFlow::new().unwrap();
     let hf = helixflow.as_weak();

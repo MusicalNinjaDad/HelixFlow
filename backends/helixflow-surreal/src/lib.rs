@@ -106,7 +106,7 @@ pub mod blocking {
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
     /// This is a blocking operation until the db is available.
     impl SurrealDb<Db> {
-        pub fn create() -> anyhow::Result<Self> {
+        pub fn new() -> anyhow::Result<Self> {
             debug!("Initialising tokio runtime");
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -170,7 +170,7 @@ pub mod blocking {
         fn test_new_task() {
             {
                 let new_task = Task::new("Test Task 1", None);
-                let backend = SurrealDb::create().unwrap();
+                let backend = SurrealDb::new().unwrap();
                 new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
             }
         }
@@ -179,7 +179,7 @@ pub mod blocking {
         fn test_new_task_written_to_db() {
             {
                 let new_task = Task::new("Test Task 2", None);
-                let backend = SurrealDb::create().unwrap();
+                let backend = SurrealDb::new().unwrap();
                 new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
                 let stored_task = backend.get(&new_task.id).unwrap();
                 assert_eq!(stored_task, new_task);
@@ -189,7 +189,7 @@ pub mod blocking {
         #[test]
         fn test_get_invalid_task() {
             {
-                let backend = SurrealDb::create().unwrap();
+                let backend = SurrealDb::new().unwrap();
                 let id = Uuid::now_v7();
                 let err = backend.get(&id).unwrap_err();
                 assert_eq!(format!("{}", err), format!("Unknown task ID: {}", id));
@@ -253,7 +253,7 @@ pub mod non_blocking {
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
     /// This is a blocking operation until the db is available.
     impl SurrealDb<Db> {
-        pub async fn create() -> anyhow::Result<Self> {
+        pub async fn new() -> anyhow::Result<Self> {
             debug!("Initialising database");
             let db = Surreal::new::<Mem>(())
                 .await
@@ -278,7 +278,7 @@ pub mod non_blocking {
         #[tokio::test]
         async fn test_new_task() {
             let new_task = Task::new("Test Task 1", None);
-            let backend = Arc::new(SurrealDb::create().await.unwrap());
+            let backend = Arc::new(SurrealDb::new().await.unwrap());
             let be = Arc::downgrade(&backend);
             tokio::spawn(async move {
                 let backend = be.upgrade().unwrap();

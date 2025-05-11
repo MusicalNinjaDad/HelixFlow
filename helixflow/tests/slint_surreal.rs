@@ -25,7 +25,7 @@ fn test_slint_with_surreal() {
         let _ = PANICKED.set(true);
     }));
 
-    let backend = Rc::new(SurrealDb::create().unwrap());
+    let backend = Rc::new(SurrealDb::new().unwrap());
 
     i_slint_backend_testing::init_integration_test_with_system_time();
 
