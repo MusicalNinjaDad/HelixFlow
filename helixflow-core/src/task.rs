@@ -45,6 +45,9 @@ pub enum TaskCreationError {
         expected: Box<Task>,
         actual: Box<Task>,
     },
+
+    #[error("task id ({id:?}) is not a valid UUID v7")]
+    InvalidID { id: String },
 }
 
 pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;

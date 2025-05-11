@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, rc::Rc};
 
-use anyhow::{Context, Ok, Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use log::debug;
 use surrealdb::{
     Connection, Surreal, Uuid,
@@ -16,7 +16,7 @@ use surrealdb::{
 
 use serde::{Deserialize, Serialize};
 
-use helixflow_core::task::Task;
+use helixflow_core::task::{Task, TaskCreationError, TaskResult};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SurrealTask {
@@ -26,11 +26,13 @@ struct SurrealTask {
 }
 
 impl TryFrom<SurrealTask> for Task {
-    type Error = anyhow::Error;
-    fn try_from(task: SurrealTask) -> Result<Task, Self::Error> {
+    type Error = TaskCreationError;
+    fn try_from(task: SurrealTask) -> TaskResult<Task> {
         let id = match task.id.id {
             Id::Uuid(id) => Ok(id.into()),
-            _ => Err(anyhow!("Not a valid UUID")),
+            _ => Err(TaskCreationError::InvalidID {
+                id: task.id.id.to_string(),
+            }),
         };
         Ok(Task {
             name: task.name,
