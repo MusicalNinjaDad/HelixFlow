@@ -48,6 +48,8 @@ pub enum TaskCreationError {
 
     #[error("task id ({id:?}) is not a valid UUID v7")]
     InvalidID { id: String },
+
+    // TODO Rename to TaskCRUDError and add "Unknown ID"
 }
 
 pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
