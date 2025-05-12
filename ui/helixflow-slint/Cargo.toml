@@ -9,3 +9,4 @@ slint.workspace = true
 
 [dev-dependencies]
 i-slint-backend-testing.workspace = true
+uuid.workspace = true
