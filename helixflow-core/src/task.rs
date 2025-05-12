@@ -8,6 +8,8 @@ use uuid::Uuid;
 /// A Task
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Task {
+    // TODO check value of using a Cow here ... are we really saving when passing around - or would
+    // it be better to have something that is `Copy`?
     pub name: Cow<'static, str>,
     pub id: Uuid,
     pub description: Option<Cow<'static, str>>,
@@ -35,8 +37,7 @@ impl Task {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskCreationError {
-    // The #[from] attribute automatically creates a From conversion so that any error
-    // convertible to anyhow::Error (which includes MyBackendError) is wrapped.
+    // The #[from] anyhow::Error will convert anything that offers `into anyhow::Error`.
     #[error("backend error: {0}")]
     BackendError(#[from] anyhow::Error),
 
@@ -48,7 +49,6 @@ pub enum TaskCreationError {
 
     #[error("task id ({id:?}) is not a valid UUID v7")]
     InvalidID { id: String },
-
     // TODO Rename to TaskCRUDError and add "Unknown ID"
 }
 
@@ -78,6 +78,8 @@ pub mod blocking {
                 })
             }
         }
+
+        /// Get task from `backend` by `id`
         fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Task> {
             Ok(backend.get(id)?)
         }
@@ -85,8 +87,13 @@ pub mod blocking {
 
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
-        /// Create a new task in the backend, update the `task.id` then return Ok(())
+        /// Create a new task in the backend, update the `task.id`.
+        ///
+        /// The returned Task should be the actual stored record from the backend - to allow
+        /// validation by `Task::create()`
         fn create(&self, task: &Task) -> anyhow::Result<Task>;
+
+        /// Get an existing task from the backend
         fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
     }
 
@@ -201,7 +208,9 @@ pub mod blocking {
     }
 }
 
+/// Non-blocking version of Task CRUD.
 pub mod non_blocking {
+    // TODO update to full functionality and identical sematics based on blocking version.
     use async_trait::async_trait;
 
     use super::*;
