@@ -4,6 +4,7 @@ use std::{
     sync::OnceLock,
 };
 
+use helixflow_core::task::{Task, blocking::CRUD};
 use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
@@ -60,4 +61,11 @@ fn test_slint_with_surreal() {
     assert!(!task_uuid.is_nil());
     assert_eq!(task_uuid.get_version(), Some(uuid::Version::SortRand));
     assert!(helixflow.get_create_enabled());
+    let ui_task = Task {
+        name: helixflow.get_task_name().to_string().into(),
+        id: task_uuid,
+        description: None,
+    };
+    let db_task = Task::get(backend.as_ref(), &task_uuid).unwrap();
+    assert_eq!(ui_task, db_task);
 }
