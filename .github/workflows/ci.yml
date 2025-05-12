@@ -4,16 +4,59 @@ on:
   push:
   pull_request:
 
+env:
+  RUSTC_BOOTSTRAP: "1"
+
 jobs:
   test:
+    strategy:
+      matrix:
+        os: [
+          ubuntu-latest, 
+          # windows-latest,
+        ]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swatinem/rust-cache@v2
+        if: ${{ runner.os != 'Windows' }}
+      - name: Cache cargo registry and build
+        if: ${{ runner.os == 'Windows' }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: "Set up Rust"
+        run: rustup show
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      - name: "Test"
+        run: cargo nextest run
+  test-wasm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
       - name: "Set up Rust"
         run: rustup show
-      - name: "Run tests"
-        run: cargo test
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      # Need to run individually for each crate. See: https://github.com/rustwasm/wasm-pack/issues/642
+      - name: "Test helixflow-core"
+        run: |
+          cd helixflow-core
+          wasm-pack test --headless --chrome
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -21,7 +64,7 @@ jobs:
       - uses: swatinem/rust-cache@v2
       - name: "Set up Rust"
         run: rustup show
-      - name: "Run tests"
+      - name: "Lint"
         run: cargo clippy
   fmt:
     runs-on: ubuntu-latest
@@ -30,5 +73,5 @@ jobs:
       - uses: swatinem/rust-cache@v2
       - name: "Set up Rust"
         run: rustup show
-      - name: "Run tests"
+      - name: "Check formatting"
         run: cargo fmt

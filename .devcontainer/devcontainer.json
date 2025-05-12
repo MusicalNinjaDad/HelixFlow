@@ -3,6 +3,17 @@
         "dockerfile": "Dockerfile"
     },
 
+    "remoteEnv": {
+        "WORKSPACEDIR": "${containerWorkspaceFolder}",
+        "CARGO_INCREMENTAL": "1",
+        // https://github.com/rust-lang/rust-analyzer/issues/17149
+        "RUSTC_BOOTSTRAP": "1"
+    },
+
+    // "onCreateCommand": "mkdir --parents logs/surrealdb && logrotate -v .devcontainer/logrotate.conf -s logs/logrotate.status",
+
+    // "postStartCommand": "surreal start --log debug --user root --pass root memory | tee logs/surrealdb/server.log",
+
     "customizations": {
         "vscode": {
             "extensions": [
@@ -10,13 +21,13 @@
                 "rust-lang.rust-analyzer",
                 "andrewbrey.rust-test-highlight",
                 "fill-labs.dependi",
-                // python
-                "ms-python.python",
-                "ms-python.vscode-pylance",
-                "charliermarsh.ruff",
+                // slint (UI)
+                "Slint.slint",
                 // configs, docs, etc.
                 "DavidAnson.vscode-markdownlint",
-                "tamasfe.even-better-toml"
+                "tamasfe.even-better-toml",
+                // Docker (for devcontainer DockerFile)
+                "ms-azuretools.vscode-containers"
             ],
             "settings": {
                 // rust

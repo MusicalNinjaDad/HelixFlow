@@ -52,18 +52,14 @@ RUN dnf -y install \
     just \
     which
 
-# Python
-RUN dnf -y install \
-    python
-
-# Rust (and python headers)
+# Rust
 # and chown CARGO_HOME and RUSTUP_HOME to the default user 
 RUN dnf -y install \
     clang \
     mold \
-    python3-devel \
     rustup \
 && rustup-init -v -y \
+&& rustup target add wasm32-unknown-unknown\
 && rustup component add \
     clippy \
     llvm-tools-preview \
@@ -75,22 +71,28 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
     cargo-expand \
     cargo-nextest \
     grcov \
-    mdbook
+    mdbook \
+    miniserve \
+    wasm-pack
 RUN chmod -R a+rwX ${CARGO_HOME} \
 && chmod -R a+rwX ${RUSTUP_HOME}
 
-# install uv and nbstripout
-COPY --from=ghcr.io/astral-sh/uv:0.6.17 /uv /uvx /bin/
+# Install SurrealDb server
+RUN curl -sSf https://install.surrealdb.com | sh \
+&& dnf -y install logrotate
 
-# nbstripout - git diff & strip handling for jupyter metadata. (Needs to be activated in workspace)
-RUN uv pip install --system nbstripout
+# Libs for building UI
+RUN dnf install -y \
+    wayland-devel \
+    xorg-x11-server-Xwayland
+
+# Chromium for headless wasm testing
+RUN dnf install -y \
+    chromium
 
 # ---
 # Final setup steps
 # ---
-
-# Set uv cache to inside workspace (allowing for hardlinking & explicit rentention management via uv)
-ENV UV_CACHE_DIR=.uv_cache
 
 # Set the default user
 USER ${USERNAME}

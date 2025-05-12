@@ -1,6 +1,33 @@
-[package]
-name = "helixflow"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = ["backends/helixflow-surreal", "helixflow", "helixflow-core", "ui/helixflow-slint"]
+resolver = "3"
 
-[dependencies]
+[workspace.dependencies]
+# internal stuff
+helixflow-core = { path = "helixflow-core" }
+helixflow-slint = { path = "ui/helixflow-slint" }
+helixflow-surreal = { path = "backends/helixflow-surreal" }
+
+# main dependencies - only specify features if required to define default actions
+anyhow = "1.0.98"
+async-trait = "0.1.88"
+log = "0.4.27"
+serde = { version = "1.0.219" }
+slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
+surrealdb = { version = "2.3.0", features = ["kv-mem"] }
+thiserror = "2.0.12"
+tokio = { version = "1.44.2" }
+uuid = { version = "1.16.0", features = ["v7", "js"] }
+
+# wasm
+console_error_panic_hook = { version = "0.1.7" }
+console_log = { version = "1.0.0" }
+getrandom = { version = "0.3.2", features = ["wasm_js"] }
+wasm-bindgen = { version = "0.2" }
+
+# dev-only dependencies
+i-slint-backend-testing = "=1.11.0"
+smol-macros = "0.1.1"
+macro_rules_attribute = "0.2.0"
+wasm-bindgen-test = "0.3.50"
+wasm-bindgen-futures = "0.4.50"

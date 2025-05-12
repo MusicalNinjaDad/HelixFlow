@@ -1,0 +1,12 @@
+[package]
+name = "helixflow-slint"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+helixflow-core.workspace = true
+slint.workspace = true
+
+[dev-dependencies]
+i-slint-backend-testing.workspace = true
+uuid.workspace = true
