@@ -35,14 +35,14 @@ pub mod blocking {
     use helixflow_core::task::blocking::{CRUD, StorageBackend};
 
     pub fn create_task<BKEND>(
-        helixflow_weak: slint::Weak<HelixFlow>,
+        helixflow: slint::Weak<HelixFlow>,
         backend: Weak<BKEND>,
     ) -> impl FnMut() + 'static
     where
         BKEND: StorageBackend + 'static,
     {
         move || {
-            let helixflow = helixflow_weak.unwrap();
+            let helixflow = helixflow.unwrap();
             let backend = backend.upgrade().unwrap();
             helixflow.set_create_enabled(false);
             let task_name: String = helixflow.get_task_name().into();
