@@ -16,7 +16,7 @@ slint! {
                 accessible_label: "Task name";
                 placeholder-text: self.accessible_label;
             }
-            id := Text {
+            task_id_display := Text {
                 accessible_label: "Task ID";
                 text: root.task_id;
                 accessible_value: self.text;
@@ -85,7 +85,8 @@ pub mod blocking {
             assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
 
             let ids: Vec<_> =
-                ElementHandle::find_by_element_id(&helixflow, "HelixFlow::id").collect();
+                ElementHandle::find_by_element_id(&helixflow, "HelixFlow::task_id_display")
+                    .collect();
             assert_eq!(ids.len(), 1);
             let id = &ids[0];
             assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
@@ -133,7 +134,8 @@ pub mod blocking {
             assert_eq!(create.type_name().unwrap().as_str(), "Button");
 
             let ids: Vec<_> =
-                ElementHandle::find_by_element_id(helixflow.as_ref(), "HelixFlow::id").collect();
+                ElementHandle::find_by_element_id(helixflow.as_ref(), "HelixFlow::task_id_display")
+                    .collect();
             assert_eq!(ids.len(), 1);
             let id = &ids[0];
 
