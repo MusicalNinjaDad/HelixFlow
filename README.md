@@ -1,6 +1,6 @@
 # HelixFlow Task Management
 
-![HelixFlow](HelixFlow.png "HelixFlow")
+![HelixFlow logo](HelixFlow.png "HelixFlow")
 
 Because only *you* know how *you* think.
 
