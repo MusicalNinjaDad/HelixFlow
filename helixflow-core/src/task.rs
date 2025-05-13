@@ -205,6 +205,18 @@ pub mod blocking {
                 "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2"
             );
         }
+
+        #[test]
+        #[cfg(false)]
+        fn list_tasks() {
+            let backend = TestBackend;
+            let task1 = Task::new("Test Task 1", None);
+            task1.create(&backend).unwrap();
+            let task2 = Task::new("Test Task 2", None);
+            task2.create(&backend).unwrap();
+            let all_tasks: Vec<Task> = TaskList::all(&backend).collect();
+            assert_eq!(all_tasks, vec![task1, task2]);
+        }
     }
 }
 

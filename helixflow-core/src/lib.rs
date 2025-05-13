@@ -2,5 +2,6 @@
 //! needed for the app.
 
 #![feature(assert_matches)]
+#![feature(cfg_boolean_literals)]
 
 pub mod task;
