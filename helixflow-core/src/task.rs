@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use uuid::Uuid;
-
+use uuid::uuid;
 /// A Task
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Task {
@@ -34,6 +34,9 @@ impl Task {
         }
     }
 }
+
+/// Iterator of `Task`s
+pub struct TaskList;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskCreationError {
@@ -85,6 +88,12 @@ pub mod blocking {
         }
     }
 
+    impl TaskList {
+        pub fn all<B: StorageBackend>(backend: &B) -> TaskResult<impl Iterator<Item = Task>> {
+            Ok(backend.get_tasks()?)
+        }
+    }
+
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
         /// Create a new task in the backend, update the `task.id`.
@@ -95,6 +104,8 @@ pub mod blocking {
 
         /// Get an existing task from the backend
         fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
+
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>>;
     }
 
     #[derive(Clone, Copy)]
@@ -118,15 +129,34 @@ pub mod blocking {
                     id: *id,
                     description: None,
                 }),
+                "0196ca5f-d934-7ec8-b042-ae37b94b8432" => Ok(Task {
+                    name: "Task 2".into(),
+                    id: *id,
+                    description: None,
+                }),
                 _ => Err(anyhow!("Unknown task ID: {}", id)),
             }
+        }
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>> {
+            Ok(vec![
+                Task {
+                    name: "Task 1".into(),
+                    id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                    description: None,
+                },
+                Task {
+                    name: "Task 2".into(),
+                    id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                    description: None,
+                },
+            ]
+            .into_iter())
         }
     }
 
     #[cfg(test)]
     pub mod tests {
         use std::assert_matches::assert_matches;
-        use uuid::uuid;
         use wasm_bindgen_test::*;
 
         use super::*;
@@ -207,14 +237,19 @@ pub mod blocking {
         }
 
         #[test]
-        #[cfg(false)]
         fn list_tasks() {
             let backend = TestBackend;
-            let task1 = Task::new("Test Task 1", None);
-            task1.create(&backend).unwrap();
-            let task2 = Task::new("Test Task 2", None);
-            task2.create(&backend).unwrap();
-            let all_tasks: Vec<Task> = TaskList::all(&backend).collect();
+            let task1 = Task {
+                name: "Task 1".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                description: None,
+            };
+            let task2 = Task {
+                name: "Task 2".into(),
+                id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                description: None,
+            };
+            let all_tasks: Vec<Task> = TaskList::all(&backend).unwrap().collect();
             assert_eq!(all_tasks, vec![task1, task2]);
         }
     }
