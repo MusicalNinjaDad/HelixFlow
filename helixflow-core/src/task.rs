@@ -89,7 +89,13 @@ pub mod blocking {
     }
 
     impl TaskList {
-        pub fn all<B: StorageBackend>(backend: &B) -> TaskResult<impl Iterator<Item = Task>> {
+        pub fn all<B: StorageBackend>(
+            backend: &B,
+        ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
+            // You cannot propagate an error from within the iterator itself using `map(|task| task?)` because the `?` operator only works in functions that return a `Result`, not in closures.
+            // If you want to propagate errors from individual items, you should return an iterator of `TaskResult<Task>`, not just `Task`.
+            // So, change the return type to `TaskResult<impl Iterator<Item = TaskResult<Task>>>` and just return the iterator directly:
+
             Ok(backend.get_tasks()?)
         }
     }
@@ -105,7 +111,7 @@ pub mod blocking {
         /// Get an existing task from the backend
         fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
 
-        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>>;
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
     }
 
     #[derive(Clone, Copy)]
@@ -137,18 +143,18 @@ pub mod blocking {
                 _ => Err(anyhow!("Unknown task ID: {}", id)),
             }
         }
-        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = Task>> {
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             Ok(vec![
-                Task {
+                Ok(Task {
                     name: "Task 1".into(),
                     id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
                     description: None,
-                },
-                Task {
+                }),
+                Ok(Task {
                     name: "Task 2".into(),
                     id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
                     description: None,
-                },
+                }),
             ]
             .into_iter())
         }
@@ -249,8 +255,14 @@ pub mod blocking {
                 id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
                 description: None,
             };
-            let all_tasks: Vec<Task> = TaskList::all(&backend).unwrap().collect();
-            assert_eq!(all_tasks, vec![task1, task2]);
+            let all_tasks: Vec<TaskResult<Task>> = TaskList::all(&backend).unwrap().collect();
+            assert_eq!(
+                all_tasks
+                    .into_iter()
+                    .map(|task| task.unwrap())
+                    .collect::<Vec<Task>>(),
+                vec![task1, task2]
+            );
         }
     }
 }
