@@ -14,20 +14,36 @@ use slint::platform::PointerEventButton;
 use helixflow_core::task::blocking::TestBackend;
 use helixflow_slint::{HelixFlow, blocking::create_task};
 
+/// Slint's event_loop doesn't propogate panics from background task so we create a custom panic
+/// handler to actively track if any occur before calling `init_integration_test_with_system_time`.
+macro_rules! prepare_slint {
+    () => {
+        static PANICKED: OnceLock<bool> = OnceLock::new();
+        static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
+            OnceLock::new();
+        let _ = DEFAULT_HOOK.set(panic::take_hook());
+
+        panic::set_hook(Box::new(|info| {
+            DEFAULT_HOOK.get().unwrap()(info);
+            let _ = PANICKED.set(true);
+        }));
+        i_slint_backend_testing::init_integration_test_with_system_time();
+    };
+}
+
+/// Run the event loop and check whether anything within it `panic`ked...
+macro_rules! run_slint_loop {
+    () => {
+        slint::run_event_loop().unwrap();
+        assert!(
+            PANICKED.get().is_none_or(|panicked| { !panicked }) // just in case it was set to `false` for some reason
+        );
+    };
+}
+
 #[test]
 fn test_set_task_id() {
-    // Slint's event_loop doesn't propogate panics from background tasks
-    //   so we need to actively track if any occur.
-    static PANICKED: OnceLock<bool> = OnceLock::new();
-    static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
-        OnceLock::new();
-    let _ = DEFAULT_HOOK.set(panic::take_hook());
-
-    panic::set_hook(Box::new(|info| {
-        DEFAULT_HOOK.get().unwrap()(info);
-        let _ = PANICKED.set(true);
-    }));
-    i_slint_backend_testing::init_integration_test_with_system_time();
+    prepare_slint!();
 
     let helixflow = HelixFlow::new().unwrap();
     let backend = Rc::new(TestBackend);
@@ -54,11 +70,8 @@ fn test_set_task_id() {
     })
     .unwrap();
 
-    slint::run_event_loop().unwrap();
+    run_slint_loop!();
 
-    assert!(
-        PANICKED.get().is_none_or(|panicked| { !panicked }) // just in case it was set to `false` for some reason
-    );
     let task_uuid = uuid::Uuid::parse_str(&helixflow.get_task_id()).unwrap();
     assert!(!task_uuid.is_nil());
     assert_eq!(task_uuid.get_version(), Some(uuid::Version::SortRand));
