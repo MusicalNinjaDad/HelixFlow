@@ -1,3 +1,6 @@
+//! Use nextest - these tests will fail on cargo test as they MUST run is separate processes
+//! for `i_slint_backend_testing::init_integration_test_with_system_time`
+
 use std::{
     panic::{self, PanicHookInfo},
     rc::Rc,
@@ -53,7 +56,9 @@ fn test_set_task_id() {
 
     slint::run_event_loop().unwrap();
 
-    assert!(PANICKED.get().is_none_or(|panicked| { !panicked }));
+    assert!(
+        PANICKED.get().is_none_or(|panicked| { !panicked }) // just in case it was set to `false` for some reason
+    );
     let task_uuid = uuid::Uuid::parse_str(&helixflow.get_task_id()).unwrap();
     assert!(!task_uuid.is_nil());
     assert_eq!(task_uuid.get_version(), Some(uuid::Version::SortRand));
