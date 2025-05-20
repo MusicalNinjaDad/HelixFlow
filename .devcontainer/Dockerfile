@@ -53,11 +53,22 @@ RUN dnf -y install \
     which
 
 # Rust
-# and chown CARGO_HOME and RUSTUP_HOME to the default user 
+ENV RUSTUP_HOME=/opt/rustup \
+    CARGO_HOME=/opt/cargo \
+    PATH=/opt/cargo/bin:$PATH
+
+RUN groupadd rust \
+    && usermod -a -G rust root \
+    && usermod -a -G rust ${USERNAME}
+
 RUN dnf -y install \
     clang \
     mold \
-    rustup \
+    rustup
+
+USER root:rust
+
+RUN umask 0002 \
 && rustup-init -v -y \
 && rustup target add wasm32-unknown-unknown\
 && rustup component add \
@@ -65,7 +76,9 @@ RUN dnf -y install \
     llvm-tools-preview \
     rustfmt \
     rust-src
-RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
+
+RUN umask 0002 \
+&& curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
 && cargo binstall --secure -y \
     cargo-cyclonedx \        
     cargo-expand \
@@ -74,8 +87,8 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
     mdbook \
     miniserve \
     wasm-pack
-RUN chmod -R a+rwX ${CARGO_HOME} \
-&& chmod -R a+rwX ${RUSTUP_HOME}
+
+USER root
 
 # Install SurrealDb server
 RUN curl -sSf https://install.surrealdb.com | sh \
