@@ -81,8 +81,9 @@ RUN chmod -R a+rwX ${CARGO_HOME} \
 RUN curl -sSf https://install.surrealdb.com | sh \
 && dnf -y install logrotate
 
-# Libs for building UI
+# Libs for building & previewing UI
 RUN dnf install -y \
+    libinput \
     wayland-devel \
     xorg-x11-server-Xwayland
 
