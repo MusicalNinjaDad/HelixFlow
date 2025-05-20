@@ -13,7 +13,7 @@ anyhow = "1.0.98"
 async-trait = "0.1.88"
 log = "0.4.27"
 serde = { version = "1.0.219" }
-slint = { version = "1.11.0", features = ["backend-winit-wayland"] }
+slint = { git = "https://github.com/MusicalNinjaDad/slint", branch = "debug_info", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.0", features = ["kv-mem"] }
 thiserror = "2.0.12"
 tokio = { version = "1.44.2" }
@@ -26,7 +26,7 @@ getrandom = { version = "0.3.2", features = ["wasm_js"] }
 wasm-bindgen = { version = "0.2" }
 
 # dev-only dependencies
-i-slint-backend-testing = "=1.11.0"
+i-slint-backend-testing = { git = "https://github.com/MusicalNinjaDad/slint", branch = "debug_info" }
 smol-macros = "0.1.1"
 macro_rules_attribute = "0.2.0"
 wasm-bindgen-test = "0.3.50"
