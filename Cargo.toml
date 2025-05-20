@@ -31,3 +31,6 @@ smol-macros = "0.1.1"
 macro_rules_attribute = "0.2.0"
 wasm-bindgen-test = "0.3.50"
 wasm-bindgen-futures = "0.4.50"
+
+# build dependencies
+slint-build = { git = "https://github.com/MusicalNinjaDad/slint", branch = "debug_info" }
