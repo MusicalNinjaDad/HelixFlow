@@ -5,7 +5,7 @@ fn main() {
 
         println!("cargo:rustc-env=SLINT_EMIT_DEBUG_INFO=1");
 
-        let config = slint_build::CompilerConfiguration::new().with_debug_info();
+        let config = slint_build::CompilerConfiguration::new().with_debug_info(true);
         for slint_file in glob("src/*.slint").expect("Failed to find slint files") {
             slint_build::compile_with_config(slint_file.unwrap(), config.clone()).unwrap();
         }
