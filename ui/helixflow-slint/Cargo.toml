@@ -12,4 +12,5 @@ i-slint-backend-testing.workspace = true
 uuid.workspace = true
 
 [build-dependencies]
+glob.workspace = true
 slint-build.workspace = true
