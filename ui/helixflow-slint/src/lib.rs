@@ -47,39 +47,40 @@ mod test {
         }};
     }
 
-    mod ui_elements {
+    #[fixture]
+    fn helixflow() -> HelixFlow {
+        init_no_event_loop();
+        let helixflow = HelixFlow::new().unwrap();
+
+        // List all elements on test failure
+        let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
+        for (i, element) in all_elements.iter().enumerate() {
+            let type_name = element.type_name();
+            let label = element
+                .accessible_label()
+                .unwrap_or_else(|| "<no label>".into());
+            println!("Element {i}: type = {:#?}, label = {label}", type_name);
+        }
+        dbg!(all_elements.len());
+
+        helixflow
+    }
+
+    #[rstest]
+    fn correct_elements(helixflow: HelixFlow) {
+        let inputboxes: Vec<_> =
+            ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
+        let buttons: Vec<_> =
+            ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
+
+        assert_eq!(inputboxes.len(), 1);
+        assert_eq!(buttons.len(), 1);
+    }
+
+    mod accessibility {
+        use i_slint_backend_testing::AccessibleRole;
+
         use super::*;
-
-        #[fixture]
-        fn helixflow() -> HelixFlow {
-            init_no_event_loop();
-            let helixflow = HelixFlow::new().unwrap();
-
-            // List all elements on test failure
-            let all_elements =
-                ElementHandle::query_descendants(&helixflow.root_element()).find_all();
-            for (i, element) in all_elements.iter().enumerate() {
-                let type_name = element.type_name();
-                let label = element
-                    .accessible_label()
-                    .unwrap_or_else(|| "<no label>".into());
-                println!("Element {i}: type = {:#?}, label = {label}", type_name);
-            }
-            dbg!(all_elements.len());
-
-            helixflow
-        }
-
-        #[rstest]
-        fn correct_elements(helixflow: HelixFlow) {
-            let inputboxes: Vec<_> =
-                ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
-            let buttons: Vec<_> =
-                ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
-
-            assert_eq!(inputboxes.len(), 1);
-            assert_eq!(buttons.len(), 1);
-        }
 
         #[rstest]
         fn task_name(helixflow: HelixFlow) {
@@ -90,6 +91,7 @@ mod test {
                 "Task name"
             );
             assert_eq!(task_name.accessible_value().unwrap().as_str(), "");
+            assert_eq!(task_name.accessible_role(), Some(AccessibleRole::TextInput));
         }
 
         #[rstest]
@@ -97,12 +99,14 @@ mod test {
             let task_id = get!(&helixflow, "HelixFlow::task_id_display");
             assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
             assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
+            assert_eq!(task_id.accessible_role(), Some(AccessibleRole::Text));
         }
 
         #[rstest]
         fn create(helixflow: HelixFlow) {
             let create = get!(&helixflow, "HelixFlow::create");
             assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
+            assert_eq!(create.accessible_role(), Some(AccessibleRole::Button));
         }
     }
 
