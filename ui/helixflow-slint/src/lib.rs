@@ -62,6 +62,17 @@ mod test {
         }
 
         #[rstest]
+        fn correct_elements(helixflow: HelixFlow) {
+            let inputboxes: Vec<_> =
+                ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
+            let buttons: Vec<_> =
+                ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
+                
+            assert_eq!(inputboxes.len(), 1);
+            assert_eq!(buttons.len(), 1);
+        }
+
+        #[rstest]
         fn task_name(helixflow: HelixFlow) {
             let inputboxes: Vec<_> =
                 ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
