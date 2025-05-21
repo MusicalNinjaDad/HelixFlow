@@ -32,48 +32,68 @@ pub mod blocking {
 mod test {
     use std::rc::Rc;
 
+    use rstest::*;
+
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
 
     include!(concat!(env!("OUT_DIR"), "/src/tasks.rs"));
 
-    #[test]
-    fn test_ui_elements() {
-        init_no_event_loop();
-        let helixflow = HelixFlow::new().unwrap();
+    mod ui_elements {
+        use super::*;
 
-        let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
-        for (i, element) in all_elements.iter().enumerate() {
-            let type_name = element.type_name();
-            let label = element
-                .accessible_label()
-                .unwrap_or_else(|| "<no label>".into());
-            println!("Element {i}: type = {:#?}, label = {label}", type_name);
+        #[fixture]
+        fn helixflow() -> HelixFlow {
+            init_no_event_loop();
+            let helixflow = HelixFlow::new().unwrap();
+
+            // List all elements on test failure
+            let all_elements =
+                ElementHandle::query_descendants(&helixflow.root_element()).find_all();
+            for (i, element) in all_elements.iter().enumerate() {
+                let type_name = element.type_name();
+                let label = element
+                    .accessible_label()
+                    .unwrap_or_else(|| "<no label>".into());
+                println!("Element {i}: type = {:#?}, label = {label}", type_name);
+            }
+            dbg!(all_elements.len());
+
+            helixflow
         }
-        dbg!(all_elements.len());
 
-        let buttons: Vec<_> =
-            ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
-        assert_eq!(buttons.len(), 1);
-        let create = &buttons[0];
-        assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
+        #[rstest]
+        fn task_name(helixflow: HelixFlow) {
+            let inputboxes: Vec<_> =
+                ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
+            assert_eq!(inputboxes.len(), 1);
+            let task_name = &inputboxes[0];
+            assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
+            assert_eq!(
+                task_name.accessible_placeholder_text().unwrap().as_str(),
+                "Task name"
+            );
+            assert_eq!(task_name.accessible_value().unwrap().as_str(), "");
+        }
 
-        let ids: Vec<_> =
-            ElementHandle::find_by_element_id(&helixflow, "HelixFlow::task_id_display").collect();
-        assert_eq!(ids.len(), 1);
-        let id = &ids[0];
-        assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
-        assert_eq!(id.accessible_value().unwrap().as_str(), "");
+        #[rstest]
+        fn task_id(helixflow: HelixFlow) {
+            let ids: Vec<_> =
+                ElementHandle::find_by_element_id(&helixflow, "HelixFlow::task_id_display")
+                    .collect();
+            assert_eq!(ids.len(), 1);
+            let id = &ids[0];
+            assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
+            assert_eq!(id.accessible_value().unwrap().as_str(), "");
+        }
 
-        let inputboxes: Vec<_> =
-            ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
-        assert_eq!(inputboxes.len(), 1);
-        let task_name = &inputboxes[0];
-        assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
-        assert_eq!(
-            task_name.accessible_placeholder_text().unwrap().as_str(),
-            "Task name"
-        );
-        assert_eq!(task_name.accessible_value().unwrap().as_str(), "");
+        #[rstest]
+        fn buttons(helixflow: HelixFlow) {
+            let buttons: Vec<_> =
+                ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
+            assert_eq!(buttons.len(), 1);
+            let create = &buttons[0];
+            assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
+        }
     }
 
     #[test]
