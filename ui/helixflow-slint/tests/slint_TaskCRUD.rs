@@ -12,7 +12,7 @@ use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
 
 use helixflow_core::task::blocking::TestBackend;
-use helixflow_slint::{HelixFlow, blocking::create_task};
+use helixflow_slint::{HelixFlow, task::blocking::create_task};
 
 /// Slint's event_loop doesn't propogate panics from background task so we create a custom panic
 /// handler to actively track if any occur before calling `init_integration_test_with_system_time`.

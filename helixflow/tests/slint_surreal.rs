@@ -9,7 +9,7 @@ use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
 
-use helixflow_slint::{HelixFlow, blocking::create_task};
+use helixflow_slint::{HelixFlow, task::blocking::create_task};
 use helixflow_surreal::blocking::SurrealDb;
 
 #[test]
