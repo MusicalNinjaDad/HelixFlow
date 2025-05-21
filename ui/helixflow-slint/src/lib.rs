@@ -35,8 +35,17 @@ mod test {
     use rstest::*;
 
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
+    use slint::ComponentHandle;
 
     include!(concat!(env!("OUT_DIR"), "/src/tasks.rs"));
+
+    macro_rules! get {
+        ($component:expr, $id:expr) => {{
+            let elements: Vec<_> = ElementHandle::find_by_element_id($component, $id).collect();
+            assert_eq!(elements.len(), 1);
+            elements.into_iter().next().unwrap()
+        }};
+    }
 
     mod ui_elements {
         use super::*;
@@ -67,17 +76,14 @@ mod test {
                 ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
             let buttons: Vec<_> =
                 ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
-                
+
             assert_eq!(inputboxes.len(), 1);
             assert_eq!(buttons.len(), 1);
         }
 
         #[rstest]
         fn task_name(helixflow: HelixFlow) {
-            let inputboxes: Vec<_> =
-                ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
-            assert_eq!(inputboxes.len(), 1);
-            let task_name = &inputboxes[0];
+            let task_name = get!(&helixflow, "HelixFlow::task_name_entry");
             assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
             assert_eq!(
                 task_name.accessible_placeholder_text().unwrap().as_str(),
@@ -88,21 +94,14 @@ mod test {
 
         #[rstest]
         fn task_id(helixflow: HelixFlow) {
-            let ids: Vec<_> =
-                ElementHandle::find_by_element_id(&helixflow, "HelixFlow::task_id_display")
-                    .collect();
-            assert_eq!(ids.len(), 1);
-            let id = &ids[0];
-            assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
-            assert_eq!(id.accessible_value().unwrap().as_str(), "");
+            let task_id = get!(&helixflow, "HelixFlow::task_id_display");
+            assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
+            assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
         }
 
         #[rstest]
-        fn buttons(helixflow: HelixFlow) {
-            let buttons: Vec<_> =
-                ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
-            assert_eq!(buttons.len(), 1);
-            let create = &buttons[0];
+        fn create(helixflow: HelixFlow) {
+            let create = get!(&helixflow, "HelixFlow::create");
             assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
         }
     }
