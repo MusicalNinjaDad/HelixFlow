@@ -1,7 +1,7 @@
 use helixflow_core::task::Task;
 use std::rc::Weak;
 
-use super::HelixFlow;
+use crate::HelixFlow;
 
 pub mod blocking {
     use super::*;
@@ -30,38 +30,14 @@ pub mod blocking {
 
 #[cfg(test)]
 mod test {
-    use assert_unordered::assert_eq_unordered_sort;
     use rstest::*;
 
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
     use slint::ComponentHandle;
 
+    use crate::test::*;
+
     include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
-
-    macro_rules! get {
-        ($component:expr, $id:expr) => {{
-            let elements: Vec<_> = ElementHandle::find_by_element_id($component, $id).collect();
-            assert_eq!(
-                elements.len(),
-                1,
-                "{} elements found with id: {}",
-                elements.len(),
-                $id
-            );
-            elements.into_iter().next().unwrap()
-        }};
-    }
-
-    macro_rules! assert_components {
-        ($actual:expr, $expected:expr) => {
-            assert_eq_unordered_sort!(
-                $actual
-                    .map(|element| element.accessible_label().unwrap())
-                    .collect::<Vec<_>>(),
-                $expected.iter().map(|&label| label.into()).collect()
-            );
-        };
-    }
 
     #[fixture]
     fn helixflow() -> HelixFlow {
