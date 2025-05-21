@@ -46,6 +46,17 @@ mod test {
         }};
     }
 
+    macro_rules! assert_components {
+        ($actual:expr, $expected:expr) => {
+            assert_eq_unordered_sort!(
+                $actual
+                    .map(|element| element.accessible_label().unwrap())
+                    .collect::<Vec<_>>(),
+                $expected.iter().map(|&label| label.into()).collect()
+            );
+        };
+    }
+
     #[fixture]
     fn helixflow() -> HelixFlow {
         init_no_event_loop();
@@ -67,24 +78,14 @@ mod test {
 
     #[rstest]
     fn correct_elements(helixflow: HelixFlow) {
-        let inputboxes: Vec<_> =
-            ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
-        let buttons: Vec<_> =
-            ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
+        let inputboxes = ElementHandle::find_by_element_type_name(&helixflow, "LineEdit");
+        let buttons = ElementHandle::find_by_element_type_name(&helixflow, "Button");
 
         let expected_inputboxes = ["Task name"];
-        assert_eq!(inputboxes.len(), expected_inputboxes.len());
-        assert_eq_unordered_sort!(
-            inputboxes
-                .into_iter()
-                .map(|element| element.accessible_label().unwrap())
-                .collect::<Vec<_>>(),
-            expected_inputboxes
-                .iter()
-                .map(|&label| label.into())
-                .collect()
-        );
-        assert_eq!(buttons.len(), 1);
+        let expected_buttons = ["Create"];
+
+        assert_components!(inputboxes, expected_inputboxes);
+        assert_components!(buttons, expected_buttons);
     }
 
     mod accessibility {
