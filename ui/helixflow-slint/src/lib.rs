@@ -41,7 +41,7 @@ mod test {
     macro_rules! get {
         ($component:expr, $id:expr) => {{
             let elements: Vec<_> = ElementHandle::find_by_element_id($component, $id).collect();
-            assert_eq!(elements.len(), 1);
+            assert_eq!(elements.len(), 1, "{} elements found with id: {}", elements.len(), $id);
             elements.into_iter().next().unwrap()
         }};
     }
