@@ -8,6 +8,7 @@ helixflow-core.workspace = true
 slint.workspace = true
 
 [dev-dependencies]
+assert_unordered.workspace = true
 i-slint-backend-testing.workspace = true
 rstest.workspace = true
 uuid.workspace = true

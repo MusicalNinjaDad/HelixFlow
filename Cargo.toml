@@ -26,6 +26,7 @@ getrandom = { version = "0.3.2", features = ["wasm_js"] }
 wasm-bindgen = { version = "0.2" }
 
 # dev-only dependencies
+assert_unordered = "0.3.5"
 i-slint-backend-testing = { git = "https://github.com/MusicalNinjaDad/slint", branch = "compile_glob" }
 smol-macros = "0.1.1"
 macro_rules_attribute = "0.2.0"
