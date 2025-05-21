@@ -1,13 +1,15 @@
 fn main() {
-    // Set SLINT_EMIT_DEBUG_INFO=1 for tests, rust-analyzer, etc.
+    let mut slint_config = slint_build::CompilerConfiguration::new();
+
     if std::env::var("DEBUG") == Ok("true".to_string()) {
+        println!("cargo:rustc-env=SLINT_EMIT_DEBUG_INFO=1"); // for `slint!` macro
+
         use glob::glob;
-
-        println!("cargo:rustc-env=SLINT_EMIT_DEBUG_INFO=1");
-
-        let config = slint_build::CompilerConfiguration::new().with_debug_info(true);
+        slint_config = slint_config.with_debug_info(true);
         for slint_file in glob("src/*.slint").expect("Failed to find slint files") {
-            slint_build::compile_with_config(slint_file.unwrap(), config.clone()).unwrap();
+            slint_build::compile_with_config(slint_file.unwrap(), slint_config.clone()).unwrap();
         }
     }
+
+    slint_build::compile_with_config("src/tasks.slint", slint_config).unwrap();
 }

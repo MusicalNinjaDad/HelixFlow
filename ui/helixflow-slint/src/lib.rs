@@ -38,7 +38,6 @@ mod test {
 
     #[test]
     fn test_ui_elements() {
-
         init_no_event_loop();
         let helixflow = HelixFlow::new().unwrap();
 
