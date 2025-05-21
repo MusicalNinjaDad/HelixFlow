@@ -34,7 +34,7 @@ mod test {
 
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
 
-    include!(concat!(env!("OUT_DIR"), "/tasks.rs"));
+    include!(concat!(env!("OUT_DIR"), "/src/tasks.rs"));
 
     #[test]
     fn test_ui_elements() {
