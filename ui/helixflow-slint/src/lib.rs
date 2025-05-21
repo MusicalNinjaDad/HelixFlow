@@ -30,8 +30,6 @@ pub mod blocking {
 
 #[cfg(test)]
 mod test {
-    use std::rc::Rc;
-
     use rstest::*;
 
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
@@ -110,48 +108,23 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_button_click() {
-        init_no_event_loop();
-        let helixflow = Rc::new(HelixFlow::new().unwrap());
+    mod callbacks {
+        use super::*;
 
-        let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
-        for (i, element) in all_elements.iter().enumerate() {
-            let type_name = element.type_name();
-            let label = element
-                .accessible_label()
-                .unwrap_or_else(|| "<no label>".into());
-            let value = element
-                .accessible_value()
-                .unwrap_or_else(|| "<no value>".into());
-            let id = element.id().unwrap_or_else(|| "<no ID>".into());
-            println!(
-                "Element {i}: id = {:#?}, type = {:#?}, label = {label}, value = {:#?}",
-                id, type_name, value
-            );
+        #[rstest]
+        fn button_click(helixflow: HelixFlow) {
+            let hf = helixflow.as_weak();
+            helixflow.on_create_task(move || {
+                hf.unwrap().set_task_id("1".into());
+            });
+
+            let create = get!(&helixflow, "HelixFlow::create");
+            let task_id = get!(&helixflow, "HelixFlow::task_id_display");
+
+            assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
+            create.invoke_accessible_default_action();
+            assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
+            assert_eq!(task_id.accessible_value().unwrap().as_str(), "1");
         }
-        dbg!(all_elements.len());
-
-        let things_called_create: Vec<_> =
-            ElementHandle::find_by_accessible_label(helixflow.as_ref(), "Create").collect();
-        assert_eq!(things_called_create.len(), 1);
-        let create = &things_called_create[0];
-        assert_eq!(create.type_name().unwrap().as_str(), "Button");
-
-        let ids: Vec<_> =
-            ElementHandle::find_by_element_id(helixflow.as_ref(), "HelixFlow::task_id_display")
-                .collect();
-        assert_eq!(ids.len(), 1);
-        let id = &ids[0];
-
-        let hf = helixflow.as_weak();
-        helixflow.on_create_task(move || {
-            hf.unwrap().set_task_id("1".into());
-        });
-
-        assert_eq!(id.accessible_value().unwrap().as_str(), "");
-        create.invoke_accessible_default_action();
-        assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
-        assert_eq!(id.accessible_value().unwrap().as_str(), "1");
     }
 }
