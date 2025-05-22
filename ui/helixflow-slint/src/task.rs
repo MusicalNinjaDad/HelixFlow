@@ -1,4 +1,5 @@
 use helixflow_core::task::{Task, TaskCreationError, TaskResult};
+use slint::ToSharedString;
 use std::rc::Weak;
 use uuid::Uuid;
 
@@ -21,6 +22,15 @@ impl TryFrom<SlintTask> for Task {
                 description: None,
             }
         })
+    }
+}
+
+impl From<Task> for SlintTask {
+    fn from(task: Task) -> Self {
+        Self {
+            name: task.name.into_owned().into(),
+            id: task.id.to_shared_string(),
+        }
     }
 }
 
@@ -156,6 +166,20 @@ mod test {
             let task: TaskResult<Task> = slint_task.try_into();
             let err = task.unwrap_err();
             assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
+        }
+
+        #[rstest]
+        fn from_task() {
+            let task = Task {
+                name: "Task 1".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                description: None,
+            };
+            let slint_task = crate::SlintTask {
+                name: SharedString::from("Task 1"),
+                id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            };
+            assert_eq!(slint_task, task.into());
         }
     }
 
