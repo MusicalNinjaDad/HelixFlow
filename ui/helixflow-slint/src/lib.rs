@@ -1,3 +1,5 @@
+#![feature(assert_matches)]
+
 slint::include_modules!();
 
 pub mod task;

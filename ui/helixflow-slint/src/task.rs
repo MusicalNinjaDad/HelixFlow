@@ -30,6 +30,8 @@ pub mod blocking {
 
 #[cfg(test)]
 mod test {
+    use std::assert_matches::assert_matches;
+
     use crate::test::*;
     use rstest::*;
 
@@ -45,14 +47,18 @@ mod test {
         type Error = TaskCreationError;
         fn try_from(task: SlintTask) -> TaskResult<Task> {
             let name: String = task.name.into();
-            let id = match Uuid::try_parse(task.id.as_str()) {
-                Ok(id) => Ok(id),
-                Err(_) => Err(TaskCreationError::InvalidID { id: task.id.into() })
-            };
-            Ok(Task {
-                name: name.into(),
-                id: id?,
-                description: None
+            Ok(if task.id.is_empty() {
+                Task::new(name, None)
+            } else {
+                let id = match Uuid::try_parse(task.id.as_str()) {
+                    Ok(id) => Ok(id),
+                    Err(_) => Err(TaskCreationError::InvalidID { id: task.id.into() }),
+                };
+                Task {
+                    name: name.into(),
+                    id: id?,
+                    description: None,
+                }
             })
         }
     }
@@ -79,7 +85,7 @@ mod test {
     }
 
     #[rstest]
-    fn slint_task_conversion() {
+    fn task_with_id() {
         let slint_task = SlintTask {
             name: SharedString::from("Task 1"),
             id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
@@ -91,6 +97,29 @@ mod test {
             description: None,
         };
         assert_eq!(task, expected_task);
+    }
+
+    #[rstest]
+    fn task_no_id() {
+        let slint_task = SlintTask {
+            name: SharedString::from("Task 1"),
+            id: SharedString::from(""),
+        };
+        let task: Task = slint_task.try_into().unwrap();
+        assert_eq!(task.name, "Task 1");
+        assert!(!task.id.is_nil());
+        assert_eq!(task.description, None);
+    }
+
+    #[rstest]
+    fn task_invalid_id() {
+        let slint_task = SlintTask {
+            name: SharedString::from("Task 1"),
+            id: SharedString::from("foo"),
+        };
+        let task: TaskResult<Task> = slint_task.try_into();
+        let err = task.unwrap_err();
+        assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
     }
 
     mod accessibility {
