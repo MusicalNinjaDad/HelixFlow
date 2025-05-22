@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use helixflow_core::task::{Task, blocking::CRUD};
-use i_slint_backend_testing::ElementHandle;
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global};
 

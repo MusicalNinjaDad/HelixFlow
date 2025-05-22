@@ -59,16 +59,73 @@ pub mod blocking {
 }
 
 #[cfg(test)]
-mod test {
+mod test_rs {
     use super::*;
+
+    use rstest::*;
+
+    use std::assert_matches::assert_matches;
+    use uuid::uuid;
+
+    #[rstest]
+    fn task_no_id() {
+        let slint_task = SlintTask {
+            name: "Task 1".into(),
+            id: "".into(),
+        };
+        let task: Task = slint_task.try_into().unwrap();
+        assert_eq!(task.name, "Task 1");
+        assert!(!task.id.is_nil());
+        assert_eq!(task.description, None);
+    }
+
+    #[rstest]
+    fn task_with_id() {
+        let slint_task = SlintTask {
+            name: "Task 1".into(),
+            id: "0196b4c9-8447-7959-ae1f-72c7c8a3dd36".into(),
+        };
+        let task: Task = slint_task.try_into().unwrap();
+        let expected_task = Task {
+            name: "Task 1".into(),
+            id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            description: None,
+        };
+        assert_eq!(task, expected_task);
+    }
+
+    #[rstest]
+    fn task_invalid_id() {
+        let slint_task = SlintTask {
+            name: "Task 1".into(),
+            id: "foo".into(),
+        };
+        let task: TaskResult<Task> = slint_task.try_into();
+        let err = task.unwrap_err();
+        assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
+    }
+
+    #[rstest]
+    fn from_task() {
+        let task = Task {
+            name: "Task 1".into(),
+            id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            description: None,
+        };
+        let slint_task = SlintTask {
+            name: "Task 1".into(),
+            id: "0196b4c9-8447-7959-ae1f-72c7c8a3dd36".into(),
+        };
+        assert_eq!(slint_task, task.into());
+    }
+}
+
+#[cfg(test)]
+mod test_slint {
     use crate::test::*;
     use rstest::*;
-    use std::assert_matches::assert_matches;
 
-    use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
-    use slint::{ComponentHandle, SharedString};
-
-    use uuid::uuid;
+    use i_slint_backend_testing::init_no_event_loop;
 
     include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
 
@@ -123,62 +180,6 @@ mod test {
             let create = get!(&taskbox, "TaskBox::create");
             assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
             assert_eq!(create.accessible_role(), Some(AccessibleRole::Button));
-        }
-    }
-
-    mod slint_task {
-        use super::*;
-
-        #[rstest]
-        fn task_no_id() {
-            let slint_task = crate::SlintTask {
-                name: SharedString::from("Task 1"),
-                id: SharedString::from(""),
-            };
-            let task: Task = slint_task.try_into().unwrap();
-            assert_eq!(task.name, "Task 1");
-            assert!(!task.id.is_nil());
-            assert_eq!(task.description, None);
-        }
-
-        #[rstest]
-        fn task_with_id() {
-            let slint_task = crate::SlintTask {
-                name: SharedString::from("Task 1"),
-                id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-            };
-            let task: Task = slint_task.try_into().unwrap();
-            let expected_task = Task {
-                name: "Task 1".into(),
-                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-                description: None,
-            };
-            assert_eq!(task, expected_task);
-        }
-
-        #[rstest]
-        fn task_invalid_id() {
-            let slint_task = crate::SlintTask {
-                name: SharedString::from("Task 1"),
-                id: SharedString::from("foo"),
-            };
-            let task: TaskResult<Task> = slint_task.try_into();
-            let err = task.unwrap_err();
-            assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
-        }
-
-        #[rstest]
-        fn from_task() {
-            let task = Task {
-                name: "Task 1".into(),
-                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-                description: None,
-            };
-            let slint_task = crate::SlintTask {
-                name: SharedString::from("Task 1"),
-                id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-            };
-            assert_eq!(slint_task, task.into());
         }
     }
 

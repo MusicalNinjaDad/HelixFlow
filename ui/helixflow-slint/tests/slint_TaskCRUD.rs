@@ -3,7 +3,6 @@
 
 use std::rc::Rc;
 
-use i_slint_backend_testing::{ElementHandle, ElementRoot};
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global};
 

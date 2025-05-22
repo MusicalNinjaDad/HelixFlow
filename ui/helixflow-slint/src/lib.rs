@@ -13,7 +13,7 @@ pub mod test {
 
     // TODO: Stick this module and following dependencies behind a feature flag.
     pub use assert_unordered::assert_eq_unordered_sort;
-    pub use i_slint_backend_testing::ElementRoot;
+    pub use i_slint_backend_testing::{ElementHandle, ElementRoot};
 
     #[macro_export]
     #[doc(hidden)]
