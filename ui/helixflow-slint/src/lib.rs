@@ -4,12 +4,14 @@ pub mod task;
 
 /// Helper macros to simplify testing: `use helixflow_slint::test::*`
 pub mod test {
-    // TODO: Stick this behind a feature flag - for use in integration tests.
-    pub use assert_unordered::assert_eq_unordered_sort;
     pub use std::{
         panic::{self, PanicHookInfo},
         sync::OnceLock,
     };
+    
+    // TODO: Stick this module and following dependencies behind a feature flag.
+    pub use assert_unordered::assert_eq_unordered_sort;
+    pub use i_slint_backend_testing::ElementRoot;
 
     #[macro_export]
     #[doc(hidden)]
@@ -88,4 +90,25 @@ pub mod test {
         };
     }
     pub use run_slint_loop;
+
+    #[macro_export]
+    #[doc(hidden)]
+    // List all slint elements to stdout (shown on test failure)
+    macro_rules! list_elements {
+        ($root:expr) => {
+            let all_elements = ElementHandle::query_descendants(&$root.root_element()).find_all();
+            for (i, element) in all_elements.iter().enumerate() {
+                let type_name = element.type_name();
+                let label = element
+                    .accessible_label()
+                    .unwrap_or_else(|| "<no label>".into());
+                let elementid = element.id().unwrap_or_else(|| "<no ID>".into());
+                println!(
+                    "Element {i}: id = {elementid}, type = {:#?}, label = {label}",
+                    type_name
+                );
+            }
+        };
+    }
+    pub use list_elements;
 }

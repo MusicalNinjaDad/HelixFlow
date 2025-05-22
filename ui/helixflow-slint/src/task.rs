@@ -42,19 +42,9 @@ mod test {
     #[fixture]
     fn taskbox() -> TaskBox {
         init_no_event_loop();
+
         let taskbox = TaskBox::new().unwrap();
-
-        // List all elements on test failure
-        let all_elements = ElementHandle::query_descendants(&taskbox.root_element()).find_all();
-        for (i, element) in all_elements.iter().enumerate() {
-            let type_name = element.type_name();
-            let label = element
-                .accessible_label()
-                .unwrap_or_else(|| "<no label>".into());
-            println!("Element {i}: type = {:#?}, label = {label}", type_name);
-        }
-        dbg!(all_elements.len());
-
+        list_elements!(&taskbox);
         taskbox
     }
 

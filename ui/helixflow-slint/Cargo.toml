@@ -4,12 +4,14 @@ version = "0.0.1"
 edition = "2024"
 
 [dependencies]
-assert_unordered.workspace = true
 helixflow-core.workspace = true
 slint.workspace = true
 
-[dev-dependencies]
+# Feature: test_helpers
+assert_unordered.workspace = true
 i-slint-backend-testing.workspace = true
+
+[dev-dependencies]
 rstest.workspace = true
 uuid.workspace = true
 

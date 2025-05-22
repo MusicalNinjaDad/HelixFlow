@@ -17,20 +17,7 @@ fn test_set_task_id() {
     let helixflow = HelixFlow::new().unwrap();
     let backend = Rc::new(TestBackend);
 
-    // List all elements on test failure
-    let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
-    for (i, element) in all_elements.iter().enumerate() {
-        let type_name = element.type_name();
-        let label = element
-            .accessible_label()
-            .unwrap_or_else(|| "<no label>".into());
-        let elementid = element.id().unwrap_or_else(|| "<no ID>".into());
-        println!(
-            "Element {i}: id = {elementid}, type = {:#?}, label = {label}",
-            type_name
-        );
-    }
-    dbg!(all_elements.len());
+    list_elements!(&helixflow);
 
     let hf = helixflow.as_weak();
     let be = Rc::downgrade(&backend);
