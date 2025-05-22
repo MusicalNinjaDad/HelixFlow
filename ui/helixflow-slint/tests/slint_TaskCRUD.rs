@@ -1,45 +1,14 @@
 //! Use nextest - these tests will fail on cargo test as they MUST run is separate processes
 //! for `i_slint_backend_testing::init_integration_test_with_system_time`
 
-use std::{
-    panic::{self, PanicHookInfo},
-    rc::Rc,
-    sync::OnceLock,
-};
+use std::rc::Rc;
 
 use i_slint_backend_testing::ElementHandle;
 use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
 
 use helixflow_core::task::blocking::TestBackend;
-use helixflow_slint::{HelixFlow, task::blocking::create_task};
-
-/// Slint's event_loop doesn't propogate panics from background task so we create a custom panic
-/// handler to actively track if any occur before calling `init_integration_test_with_system_time`.
-macro_rules! prepare_slint {
-    () => {
-        static PANICKED: OnceLock<bool> = OnceLock::new();
-        static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
-            OnceLock::new();
-        let _ = DEFAULT_HOOK.set(panic::take_hook());
-
-        panic::set_hook(Box::new(|info| {
-            DEFAULT_HOOK.get().unwrap()(info);
-            let _ = PANICKED.set(true);
-        }));
-        i_slint_backend_testing::init_integration_test_with_system_time();
-    };
-}
-
-/// Run the event loop and check whether anything within it `panic`ked...
-macro_rules! run_slint_loop {
-    () => {
-        slint::run_event_loop().unwrap();
-        assert!(
-            PANICKED.get().is_none_or(|panicked| { !panicked }) // just in case it was set to `false` for some reason
-        );
-    };
-}
+use helixflow_slint::{HelixFlow, task::blocking::create_task, test::*};
 
 #[test]
 fn test_set_task_id() {

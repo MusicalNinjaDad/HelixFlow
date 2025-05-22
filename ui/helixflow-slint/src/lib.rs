@@ -2,10 +2,11 @@ slint::include_modules!();
 
 pub mod task;
 
-#[cfg(test)]
 /// Helper macros to simplify testing: `use helixflow_slint::test::*`
 pub mod test {
+    // TODO: Stick this behind a feature flag - for use in integration tests.
     pub use assert_unordered::assert_eq_unordered_sort;
+    pub use std::{panic::{self, PanicHookInfo},    sync::OnceLock};
 
     #[macro_export]
     #[doc(hidden)]
@@ -33,9 +34,9 @@ pub mod test {
     ///
     /// ```rust,no_run
     /// let inputboxes: impl Iterator<Item = ElementHandle> = ElementHandle::find_by_element_type_name(&taskbox, "LineEdit");
-    /// 
+    ///
     /// let expected_inputboxes = ["Task name"];
-    /// 
+    ///
     /// assert_components!(inputboxes, expected_inputboxes);
     /// ```
     macro_rules! assert_components {
@@ -49,4 +50,39 @@ pub mod test {
         };
     }
     pub use assert_components;
+
+    #[macro_export]
+    #[doc(hidden)]
+    /// Slint's event_loop doesn't propogate panics from background task so we create a custom panic
+    /// handler to actively track if any occur before calling `init_integration_test_with_system_time`.
+    ///
+    /// Use `run_slint_loop!()` to run the even loop and then check for panics.
+    macro_rules! prepare_slint {
+        () => {
+            static PANICKED: OnceLock<bool> = OnceLock::new();
+            static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
+                OnceLock::new();
+            let _ = DEFAULT_HOOK.set(panic::take_hook());
+
+            panic::set_hook(Box::new(|info| {
+                DEFAULT_HOOK.get().unwrap()(info);
+                let _ = PANICKED.set(true);
+            }));
+            i_slint_backend_testing::init_integration_test_with_system_time();
+        };
+    }
+    pub use prepare_slint;
+
+    #[macro_export]
+    #[doc(hidden)]
+    /// Run the event loop and check whether anything within it `panic`ked...
+    macro_rules! run_slint_loop {
+        () => {
+            slint::run_event_loop().unwrap();
+            assert!(
+                PANICKED.get().is_none_or(|panicked| { !panicked }) // just in case it was set to `false` for some reason
+            );
+        };
+    }
+    pub use run_slint_loop;
 }
