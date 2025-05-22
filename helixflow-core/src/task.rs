@@ -225,7 +225,7 @@ pub mod blocking {
                 task,
                 Task {
                     name: "Task 1".into(),
-                    id: id,
+                    id,
                     description: None
                 }
             )
