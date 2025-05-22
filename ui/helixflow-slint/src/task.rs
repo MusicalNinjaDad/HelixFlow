@@ -84,44 +84,6 @@ mod test {
         assert_components!(buttons, expected_buttons);
     }
 
-    #[rstest]
-    fn task_with_id() {
-        let slint_task = super::SlintTask {
-            name: SharedString::from("Task 1"),
-            id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-        };
-        let task: Task = slint_task.try_into().unwrap();
-        let expected_task = Task {
-            name: "Task 1".into(),
-            id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-            description: None,
-        };
-        assert_eq!(task, expected_task);
-    }
-
-    #[rstest]
-    fn task_no_id() {
-        let slint_task = super::SlintTask {
-            name: SharedString::from("Task 1"),
-            id: SharedString::from(""),
-        };
-        let task: Task = slint_task.try_into().unwrap();
-        assert_eq!(task.name, "Task 1");
-        assert!(!task.id.is_nil());
-        assert_eq!(task.description, None);
-    }
-
-    #[rstest]
-    fn task_invalid_id() {
-        let slint_task = super::SlintTask {
-            name: SharedString::from("Task 1"),
-            id: SharedString::from("foo"),
-        };
-        let task: TaskResult<Task> = slint_task.try_into();
-        let err = task.unwrap_err();
-        assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
-    }
-
     mod accessibility {
         use i_slint_backend_testing::AccessibleRole;
 
@@ -152,6 +114,48 @@ mod test {
             let create = get!(&taskbox, "TaskBox::create");
             assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
             assert_eq!(create.accessible_role(), Some(AccessibleRole::Button));
+        }
+    }
+
+    mod slint_task {
+        use super::*;
+
+        #[rstest]
+        fn task_no_id() {
+            let slint_task = crate::SlintTask {
+                name: SharedString::from("Task 1"),
+                id: SharedString::from(""),
+            };
+            let task: Task = slint_task.try_into().unwrap();
+            assert_eq!(task.name, "Task 1");
+            assert!(!task.id.is_nil());
+            assert_eq!(task.description, None);
+        }
+
+        #[rstest]
+        fn task_with_id() {
+            let slint_task = crate::SlintTask {
+                name: SharedString::from("Task 1"),
+                id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            };
+            let task: Task = slint_task.try_into().unwrap();
+            let expected_task = Task {
+                name: "Task 1".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                description: None,
+            };
+            assert_eq!(task, expected_task);
+        }
+
+        #[rstest]
+        fn task_invalid_id() {
+            let slint_task = crate::SlintTask {
+                name: SharedString::from("Task 1"),
+                id: SharedString::from("foo"),
+            };
+            let task: TaskResult<Task> = slint_task.try_into();
+            let err = task.unwrap_err();
+            assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
         }
     }
 
