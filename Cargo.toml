@@ -14,7 +14,7 @@ async-trait = "0.1.88"
 log = "0.4.27"
 serde = { version = "1.0.219" }
 slint = { git = "https://github.com/slint-ui/slint", features = ["backend-winit-wayland"] }
-surrealdb = { version = "2.3.0", features = ["kv-mem"] }
+surrealdb = { version = "2.3.3", features = ["kv-mem"] }
 thiserror = "2.0.12"
 tokio = { version = "1.44.2" }
 uuid = { version = "1.16.0", features = ["v7", "js"] }
@@ -22,7 +22,7 @@ uuid = { version = "1.16.0", features = ["v7", "js"] }
 # wasm
 console_error_panic_hook = { version = "0.1.7" }
 console_log = { version = "1.0.0" }
-getrandom = { version = "0.3.2", features = ["wasm_js"] }
+getrandom = { version = "0.3.3", features = ["wasm_js"] }
 wasm-bindgen = { version = "0.2" }
 
 # dev-only dependencies
