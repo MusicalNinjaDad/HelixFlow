@@ -6,7 +6,10 @@ pub mod task;
 pub mod test {
     // TODO: Stick this behind a feature flag - for use in integration tests.
     pub use assert_unordered::assert_eq_unordered_sort;
-    pub use std::{panic::{self, PanicHookInfo},    sync::OnceLock};
+    pub use std::{
+        panic::{self, PanicHookInfo},
+        sync::OnceLock,
+    };
 
     #[macro_export]
     #[doc(hidden)]
