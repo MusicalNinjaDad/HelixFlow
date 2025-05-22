@@ -13,7 +13,7 @@ fn test_slint_with_surreal() {
     prepare_slint!();
 
     let backend = Rc::new(SurrealDb::new().unwrap());
-    
+
     let helixflow = HelixFlow::new().unwrap();
     list_elements!(&helixflow);
 
