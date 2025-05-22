@@ -1,7 +1,28 @@
-use helixflow_core::task::Task;
+use helixflow_core::task::{Task, TaskCreationError, TaskResult};
 use std::rc::Weak;
+use uuid::Uuid;
 
-use crate::HelixFlow;
+use crate::{HelixFlow, SlintTask};
+
+impl TryFrom<SlintTask> for Task {
+    type Error = TaskCreationError;
+    fn try_from(task: SlintTask) -> TaskResult<Task> {
+        let name: String = task.name.into();
+        Ok(if task.id.is_empty() {
+            Task::new(name, None)
+        } else {
+            let id = match Uuid::try_parse(task.id.as_str()) {
+                Ok(id) => Ok(id),
+                Err(_) => Err(TaskCreationError::InvalidID { id: task.id.into() }),
+            };
+            Task {
+                name: name.into(),
+                id: id?,
+                description: None,
+            }
+        })
+    }
+}
 
 pub mod blocking {
     use super::*;
@@ -30,38 +51,17 @@ pub mod blocking {
 
 #[cfg(test)]
 mod test {
-    use std::assert_matches::assert_matches;
-
+    use super::*;
     use crate::test::*;
     use rstest::*;
+    use std::assert_matches::assert_matches;
 
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
     use slint::{ComponentHandle, SharedString};
 
-    use helixflow_core::task::{Task, TaskCreationError, TaskResult};
-    use uuid::{Uuid, uuid};
+    use uuid::uuid;
 
     include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
-
-    impl TryFrom<SlintTask> for Task {
-        type Error = TaskCreationError;
-        fn try_from(task: SlintTask) -> TaskResult<Task> {
-            let name: String = task.name.into();
-            Ok(if task.id.is_empty() {
-                Task::new(name, None)
-            } else {
-                let id = match Uuid::try_parse(task.id.as_str()) {
-                    Ok(id) => Ok(id),
-                    Err(_) => Err(TaskCreationError::InvalidID { id: task.id.into() }),
-                };
-                Task {
-                    name: name.into(),
-                    id: id?,
-                    description: None,
-                }
-            })
-        }
-    }
 
     #[fixture]
     fn taskbox() -> TaskBox {
@@ -86,7 +86,7 @@ mod test {
 
     #[rstest]
     fn task_with_id() {
-        let slint_task = SlintTask {
+        let slint_task = super::SlintTask {
             name: SharedString::from("Task 1"),
             id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
         };
@@ -101,7 +101,7 @@ mod test {
 
     #[rstest]
     fn task_no_id() {
-        let slint_task = SlintTask {
+        let slint_task = super::SlintTask {
             name: SharedString::from("Task 1"),
             id: SharedString::from(""),
         };
@@ -113,7 +113,7 @@ mod test {
 
     #[rstest]
     fn task_invalid_id() {
-        let slint_task = SlintTask {
+        let slint_task = super::SlintTask {
             name: SharedString::from("Task 1"),
             id: SharedString::from("foo"),
         };
