@@ -1,153 +1,116 @@
-use std::rc::Weak;
+#![feature(assert_matches)]
 
-use slint::slint;
+slint::include_modules!();
 
-use helixflow_core::task::Task;
+pub mod task;
 
-slint! {
-    import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
-    export component HelixFlow inherits Window {
-        callback create_task;
-        in property <bool> create_enabled: true;
-        in property <string> task_id: "";
-        in-out property <string> task_name: task_name_entry.text;
-        VerticalBox {
-            task_name_entry := LineEdit {
-                accessible_label: "Task name";
-                placeholder-text: self.accessible_label;
-            }
-            task_id_display := Text {
-                accessible_label: "Task ID";
-                text: root.task_id;
-                accessible_value: self.text;
-            }
-            create := Button {
-                enabled: root.create_enabled;
-                text: "Create";
-                clicked() => { root.create_task(); }
-            }
-        }
+/// Helper macros & re-exports to simplify testing: `use helixflow_slint::test::*`
+pub mod test {
+    pub use std::{
+        panic::{self, PanicHookInfo},
+        sync::OnceLock,
+    };
+
+    // TODO: Stick this module and following dependencies behind a feature flag.
+    pub use assert_unordered::assert_eq_unordered_sort;
+    pub use i_slint_backend_testing::{ElementHandle, ElementRoot};
+
+    #[macro_export]
+    #[doc(hidden)]
+    /// Slint's event_loop doesn't propogate panics from background task so we create a custom panic
+    /// handler to actively track if any occur before calling `init_integration_test_with_system_time`.
+    ///
+    /// Use `run_slint_loop!()` to run the even loop and then check for panics.
+    macro_rules! prepare_slint {
+        () => {
+            static PANICKED: OnceLock<bool> = OnceLock::new();
+            static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
+                OnceLock::new();
+            let _ = DEFAULT_HOOK.set(panic::take_hook());
+
+            panic::set_hook(Box::new(|info| {
+                DEFAULT_HOOK.get().unwrap()(info);
+                let _ = PANICKED.set(true);
+            }));
+            i_slint_backend_testing::init_integration_test_with_system_time();
+        };
     }
-}
+    pub use prepare_slint;
 
-pub mod blocking {
-    use super::*;
-    use helixflow_core::task::blocking::{CRUD, StorageBackend};
-
-    pub fn create_task<BKEND>(
-        helixflow: slint::Weak<HelixFlow>,
-        backend: Weak<BKEND>,
-    ) -> impl FnMut() + 'static
-    where
-        BKEND: StorageBackend + 'static,
-    {
-        move || {
-            let helixflow = helixflow.unwrap();
-            let backend = backend.upgrade().unwrap();
-            helixflow.set_create_enabled(false);
-            let task_name: String = helixflow.get_task_name().into();
-            let task = Task::new(task_name, None);
-            task.create(backend.as_ref()).unwrap();
-            let task_id = task.id;
-            helixflow.set_task_id(format!("{task_id}").into());
-            helixflow.set_create_enabled(true);
-        }
-    }
-
-    #[cfg(test)]
-    mod test {
-        use std::rc::Rc;
-
-        use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
-
-        use super::*;
-
-        #[test]
-        fn test_ui_elements() {
-            init_no_event_loop();
-            let helixflow = HelixFlow::new().unwrap();
-
-            let all_elements =
-                ElementHandle::query_descendants(&helixflow.root_element()).find_all();
-            for (i, element) in all_elements.iter().enumerate() {
-                let type_name = element.type_name();
-                let label = element
-                    .accessible_label()
-                    .unwrap_or_else(|| "<no label>".into());
-                println!("Element {i}: type = {:#?}, label = {label}", type_name);
-            }
-            dbg!(all_elements.len());
-
-            let buttons: Vec<_> =
-                ElementHandle::find_by_element_type_name(&helixflow, "Button").collect();
-            assert_eq!(buttons.len(), 1);
-            let create = &buttons[0];
-            assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
-
-            let ids: Vec<_> =
-                ElementHandle::find_by_element_id(&helixflow, "HelixFlow::task_id_display")
-                    .collect();
-            assert_eq!(ids.len(), 1);
-            let id = &ids[0];
-            assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
-            assert_eq!(id.accessible_value().unwrap().as_str(), "");
-
-            let inputboxes: Vec<_> =
-                ElementHandle::find_by_element_type_name(&helixflow, "LineEdit").collect();
-            assert_eq!(inputboxes.len(), 1);
-            let task_name = &inputboxes[0];
-            assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
-            assert_eq!(
-                task_name.accessible_placeholder_text().unwrap().as_str(),
-                "Task name"
+    #[macro_export]
+    #[doc(hidden)]
+    /// Run the event loop and check whether anything within it `panic`ked...
+    macro_rules! run_slint_loop {
+        () => {
+            slint::run_event_loop().unwrap();
+            assert!(
+                PANICKED.get().is_none_or(|panicked| { !panicked }) // just in case it was set to `false` for some reason
             );
-            assert_eq!(task_name.accessible_value().unwrap().as_str(), "");
-        }
+        };
+    }
+    pub use run_slint_loop;
 
-        #[test]
-        fn test_button_click() {
-            init_no_event_loop();
-            let helixflow = Rc::new(HelixFlow::new().unwrap());
-
-            let all_elements =
-                ElementHandle::query_descendants(&helixflow.root_element()).find_all();
+    #[macro_export]
+    #[doc(hidden)]
+    // List all slint elements to stdout (shown on test failure)
+    macro_rules! list_elements {
+        ($root:expr) => {
+            let all_elements = ElementHandle::query_descendants(&$root.root_element()).find_all();
             for (i, element) in all_elements.iter().enumerate() {
                 let type_name = element.type_name();
                 let label = element
                     .accessible_label()
                     .unwrap_or_else(|| "<no label>".into());
-                let value = element
-                    .accessible_value()
-                    .unwrap_or_else(|| "<no value>".into());
-                let id = element.id().unwrap_or_else(|| "<no ID>".into());
+                let elementid = element.id().unwrap_or_else(|| "<no ID>".into());
                 println!(
-                    "Element {i}: id = {:#?}, type = {:#?}, label = {label}, value = {:#?}",
-                    id, type_name, value
+                    "Element {i}: id = {elementid}, type = {:#?}, label = {label}",
+                    type_name
                 );
             }
-            dbg!(all_elements.len());
-
-            let things_called_create: Vec<_> =
-                ElementHandle::find_by_accessible_label(helixflow.as_ref(), "Create").collect();
-            assert_eq!(things_called_create.len(), 1);
-            let create = &things_called_create[0];
-            assert_eq!(create.type_name().unwrap().as_str(), "Button");
-
-            let ids: Vec<_> =
-                ElementHandle::find_by_element_id(helixflow.as_ref(), "HelixFlow::task_id_display")
-                    .collect();
-            assert_eq!(ids.len(), 1);
-            let id = &ids[0];
-
-            let hf = helixflow.as_weak();
-            helixflow.on_create_task(move || {
-                hf.unwrap().set_task_id("1".into());
-            });
-
-            assert_eq!(id.accessible_value().unwrap().as_str(), "");
-            create.invoke_accessible_default_action();
-            assert_eq!(id.accessible_label().unwrap().as_str(), "Task ID");
-            assert_eq!(id.accessible_value().unwrap().as_str(), "1");
-        }
+        };
     }
+    pub use list_elements;
+
+    #[macro_export]
+    #[doc(hidden)]
+    /// Get a component's `ElementHandle` via the _unique_ id: `get!(&parent, "Parent::id")`
+    ///
+    /// **Panics** if the id is not unique.
+    macro_rules! get {
+        ($component:expr, $id:expr) => {{
+            let elements: Vec<_> = ElementHandle::find_by_element_id($component, $id).collect();
+            assert_eq!(
+                elements.len(),
+                1,
+                "{} elements found with id: {}",
+                elements.len(),
+                $id
+            );
+            elements.into_iter().next().unwrap()
+        }};
+    }
+    pub use get;
+
+    #[macro_export]
+    #[doc(hidden)]
+    /// Assert that the actual components match those expected based on the accessibility labels.
+    ///
+    /// ```rust,no_run
+    /// let inputboxes: impl Iterator<Item = ElementHandle> = ElementHandle::find_by_element_type_name(&taskbox, "LineEdit");
+    ///
+    /// let expected_inputboxes = ["Task name"];
+    ///
+    /// assert_components!(inputboxes, expected_inputboxes);
+    /// ```
+    macro_rules! assert_components {
+        ($actual:expr, $expected:expr) => {
+            assert_eq_unordered_sort!(
+                $actual
+                    .map(|element| element.accessible_label().unwrap())
+                    .collect::<Vec<_>>(),
+                $expected.iter().map(|&label| label.into()).collect()
+            );
+        };
+    }
+    pub use assert_components;
 }

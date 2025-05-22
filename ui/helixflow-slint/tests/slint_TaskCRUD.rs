@@ -1,33 +1,22 @@
-use std::{
-    panic::{self, PanicHookInfo},
-    rc::Rc,
-    sync::OnceLock,
-};
+//! Use nextest - these tests will fail on cargo test as they MUST run is separate processes
+//! for `i_slint_backend_testing::init_integration_test_with_system_time`
 
-use i_slint_backend_testing::ElementHandle;
-use slint::ComponentHandle;
+use std::rc::Rc;
+
 use slint::platform::PointerEventButton;
+use slint::{ComponentHandle, Global};
 
-use helixflow_core::task::blocking::TestBackend;
-use helixflow_slint::{HelixFlow, blocking::create_task};
+use helixflow_core::task::{Task, blocking::TestBackend};
+use helixflow_slint::{CurrentTask, HelixFlow, task::blocking::create_task, test::*};
 
 #[test]
 fn test_set_task_id() {
-    // Slint's event_loop doesn't propogate panics from background tasks
-    //   so we need to actively track if any occur.
-    static PANICKED: OnceLock<bool> = OnceLock::new();
-    static DEFAULT_HOOK: OnceLock<Box<dyn Fn(&PanicHookInfo) + Sync + Send + 'static>> =
-        OnceLock::new();
-    let _ = DEFAULT_HOOK.set(panic::take_hook());
-
-    panic::set_hook(Box::new(|info| {
-        DEFAULT_HOOK.get().unwrap()(info);
-        let _ = PANICKED.set(true);
-    }));
-    i_slint_backend_testing::init_integration_test_with_system_time();
+    prepare_slint!();
 
     let helixflow = HelixFlow::new().unwrap();
     let backend = Rc::new(TestBackend);
+
+    list_elements!(&helixflow);
 
     let hf = helixflow.as_weak();
     let be = Rc::downgrade(&backend);
@@ -38,24 +27,34 @@ fn test_set_task_id() {
     slint::spawn_local(async move {
         let helixflow = hf.unwrap();
         helixflow.set_task_name("A valid task".into());
-        assert_eq!(helixflow.get_task_id(), "");
+
+        let task_id_display = get!(&helixflow, "TaskBox::task_id_display");
+        assert_eq!(task_id_display.accessible_value().unwrap(), "");
+
+        let create = get!(&helixflow, "TaskBox::create");
         assert!(helixflow.get_create_enabled());
-
-        let creates_: Vec<_> =
-            ElementHandle::find_by_element_id(&helixflow, "HelixFlow::create").collect();
-        assert_eq!(creates_.len(), 1);
-        let create = &creates_[0];
-
+        assert!(create.accessible_enabled().unwrap());
         create.single_click(PointerEventButton::Left).await;
+
         slint::quit_event_loop().unwrap();
     })
     .unwrap();
 
-    slint::run_event_loop().unwrap();
+    run_slint_loop!();
 
-    assert!(PANICKED.get().is_none_or(|panicked| { !panicked }));
-    let task_uuid = uuid::Uuid::parse_str(&helixflow.get_task_id()).unwrap();
-    assert!(!task_uuid.is_nil());
-    assert_eq!(task_uuid.get_version(), Some(uuid::Version::SortRand));
+    let current_task: Task = CurrentTask::get(&helixflow).get_task().try_into().unwrap();
+    assert_eq!(current_task.name, "A valid task");
+    assert_eq!(current_task.description, None);
+    assert!(!current_task.id.is_nil());
+    assert_eq!(current_task.id.get_version(), Some(uuid::Version::SortRand));
+
+    let task_id_display = get!(&helixflow, "TaskBox::task_id_display");
+    assert_eq!(
+        task_id_display.accessible_value().unwrap(),
+        current_task.id.to_string()
+    );
+
+    let create = get!(&helixflow, "TaskBox::create");
     assert!(helixflow.get_create_enabled());
+    assert!(create.accessible_enabled().unwrap());
 }

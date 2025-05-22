@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use uuid::Uuid;
-
+use uuid::uuid;
 /// A Task
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Task {
@@ -34,6 +34,9 @@ impl Task {
         }
     }
 }
+
+/// Iterator of `Task`s
+pub struct TaskList;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskCreationError {
@@ -85,6 +88,18 @@ pub mod blocking {
         }
     }
 
+    impl TaskList {
+        pub fn all<B: StorageBackend>(
+            backend: &B,
+        ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
+            // You cannot propagate an error from within the iterator itself using `map(|task| task?)` because the `?` operator only works in functions that return a `Result`, not in closures.
+            // If you want to propagate errors from individual items, you should return an iterator of `TaskResult<Task>`, not just `Task`.
+            // So, change the return type to `TaskResult<impl Iterator<Item = TaskResult<Task>>>` and just return the iterator directly:
+
+            Ok(backend.get_tasks()?)
+        }
+    }
+
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
         /// Create a new task in the backend, update the `task.id`.
@@ -95,6 +110,8 @@ pub mod blocking {
 
         /// Get an existing task from the backend
         fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
+
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
     }
 
     #[derive(Clone, Copy)]
@@ -118,15 +135,34 @@ pub mod blocking {
                     id: *id,
                     description: None,
                 }),
+                "0196ca5f-d934-7ec8-b042-ae37b94b8432" => Ok(Task {
+                    name: "Task 2".into(),
+                    id: *id,
+                    description: None,
+                }),
                 _ => Err(anyhow!("Unknown task ID: {}", id)),
             }
+        }
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+            Ok(vec![
+                Ok(Task {
+                    name: "Task 1".into(),
+                    id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                    description: None,
+                }),
+                Ok(Task {
+                    name: "Task 2".into(),
+                    id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                    description: None,
+                }),
+            ]
+            .into_iter())
         }
     }
 
     #[cfg(test)]
     pub mod tests {
         use std::assert_matches::assert_matches;
-        use uuid::uuid;
         use wasm_bindgen_test::*;
 
         use super::*;
@@ -189,7 +225,7 @@ pub mod blocking {
                 task,
                 Task {
                     name: "Task 1".into(),
-                    id: id,
+                    id,
                     description: None
                 }
             )
@@ -203,6 +239,29 @@ pub mod blocking {
             assert_eq!(
                 format!("{}", err),
                 "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2"
+            );
+        }
+
+        #[test]
+        fn list_tasks() {
+            let backend = TestBackend;
+            let task1 = Task {
+                name: "Task 1".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                description: None,
+            };
+            let task2 = Task {
+                name: "Task 2".into(),
+                id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                description: None,
+            };
+            let all_tasks: Vec<TaskResult<Task>> = TaskList::all(&backend).unwrap().collect();
+            assert_eq!(
+                all_tasks
+                    .into_iter()
+                    .map(|task| task.unwrap())
+                    .collect::<Vec<Task>>(),
+                vec![task1, task2]
             );
         }
     }

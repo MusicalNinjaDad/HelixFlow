@@ -104,6 +104,12 @@ pub mod blocking {
                 Err(anyhow!("Unknown task ID: {}", id))
             }
         }
+
+        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+            let tasks: Vec<SurrealTask> =
+                self.rt.block_on(self.db.select("Tasks").into_future())?;
+            Ok(tasks.into_iter().map(|task| task.try_into()))
+        }
     }
 
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
@@ -197,6 +203,21 @@ pub mod blocking {
                 let err = backend.get(&id).unwrap_err();
                 assert_eq!(format!("{}", err), format!("Unknown task ID: {}", id));
             }
+        }
+
+        #[test]
+        fn test_get_tasks() {
+            let backend = SurrealDb::new().unwrap();
+            let task1 = Task::new("Task 1", None);
+            backend.create(&task1).unwrap();
+            let task2 = Task::new("Task 2", None);
+            backend.create(&task2).unwrap();
+            let all_tasks: Vec<Task> = backend
+                .get_tasks()
+                .unwrap()
+                .map(|task| task.unwrap())
+                .collect();
+            assert_eq!(all_tasks, vec![task1, task2]);
         }
 
         // #[test]
