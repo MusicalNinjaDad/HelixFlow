@@ -8,17 +8,13 @@ use crate::{CurrentTask, HelixFlow, SlintTask};
 impl TryFrom<SlintTask> for Task {
     type Error = TaskCreationError;
     fn try_from(task: SlintTask) -> TaskResult<Task> {
-        let name: String = task.name.into();
         Ok(if task.id.is_empty() {
-            Task::new(name, None)
+            Task::new(task.name.to_string(), None)
         } else {
-            let id = match Uuid::try_parse(task.id.as_str()) {
-                Ok(id) => Ok(id),
-                Err(_) => Err(TaskCreationError::InvalidID { id: task.id.into() }),
-            };
             Task {
-                name: name.into(),
-                id: id?,
+                name: task.name.to_string().into(),
+                id: Uuid::try_parse(task.id.as_str())
+                    .map_err(|_| TaskCreationError::InvalidID { id: task.id.into() })?,
                 description: None,
             }
         })
