@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use i_slint_backend_testing::ElementHandle;
+use i_slint_backend_testing::{ElementHandle, ElementRoot};
 use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
 
@@ -12,7 +12,6 @@ use helixflow_slint::{HelixFlow, task::blocking::create_task, test::*};
 
 #[test]
 fn test_set_task_id() {
-    use i_slint_backend_testing::ElementRoot;
     prepare_slint!();
 
     let helixflow = HelixFlow::new().unwrap();
