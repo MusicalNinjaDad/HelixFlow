@@ -30,14 +30,32 @@ pub mod blocking {
 
 #[cfg(test)]
 mod test {
+    use crate::test::*;
     use rstest::*;
 
     use i_slint_backend_testing::{ElementHandle, ElementRoot, init_no_event_loop};
-    use slint::ComponentHandle;
+    use slint::{ComponentHandle, SharedString};
 
-    use crate::test::*;
+    use helixflow_core::task::{Task, TaskCreationError, TaskResult};
+    use uuid::{Uuid, uuid};
 
     include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
+
+    impl TryFrom<SlintTask> for Task {
+        type Error = TaskCreationError;
+        fn try_from(task: SlintTask) -> TaskResult<Task> {
+            let name: String = task.name.into();
+            let id = match Uuid::try_parse(task.id.as_str()) {
+                Ok(id) => Ok(id),
+                Err(_) => Err(TaskCreationError::InvalidID { id: task.id.into() })
+            };
+            Ok(Task {
+                name: name.into(),
+                id: id?,
+                description: None
+            })
+        }
+    }
 
     #[fixture]
     fn taskbox() -> TaskBox {
@@ -58,6 +76,21 @@ mod test {
 
         assert_components!(inputboxes, expected_inputboxes);
         assert_components!(buttons, expected_buttons);
+    }
+
+    #[rstest]
+    fn slint_task_conversion() {
+        let slint_task = SlintTask {
+            name: SharedString::from("Task 1"),
+            id: SharedString::from("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+        };
+        let task: Task = slint_task.try_into().unwrap();
+        let expected_task = Task {
+            name: "Task 1".into(),
+            id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            description: None,
+        };
+        assert_eq!(task, expected_task);
     }
 
     mod accessibility {
