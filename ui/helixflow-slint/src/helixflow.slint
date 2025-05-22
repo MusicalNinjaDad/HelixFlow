@@ -1,0 +1,13 @@
+import { TaskBox } from "task.slint";
+
+export component HelixFlow inherits Window {
+    callback create_task;
+    in property <bool> create_enabled: true;
+    in property <string> task_id: "";
+    in-out property <string> task_name: taskbox.task_name;
+    taskbox := TaskBox {
+        create_task => { root.create_task(); }
+        create_enabled: root.create_enabled;
+        task_id: root.task_id;
+    }
+}

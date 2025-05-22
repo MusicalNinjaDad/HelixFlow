@@ -43,10 +43,26 @@ macro_rules! run_slint_loop {
 
 #[test]
 fn test_set_task_id() {
+    use i_slint_backend_testing::ElementRoot;
     prepare_slint!();
 
     let helixflow = HelixFlow::new().unwrap();
     let backend = Rc::new(TestBackend);
+
+    // List all elements on test failure
+    let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
+    for (i, element) in all_elements.iter().enumerate() {
+        let type_name = element.type_name();
+        let label = element
+            .accessible_label()
+            .unwrap_or_else(|| "<no label>".into());
+        let elementid = element.id().unwrap_or_else(|| "<no ID>".into());
+        println!(
+            "Element {i}: id = {elementid}, type = {:#?}, label = {label}",
+            type_name
+        );
+    }
+    dbg!(all_elements.len());
 
     let hf = helixflow.as_weak();
     let be = Rc::downgrade(&backend);
@@ -61,7 +77,7 @@ fn test_set_task_id() {
         assert!(helixflow.get_create_enabled());
 
         let creates_: Vec<_> =
-            ElementHandle::find_by_element_id(&helixflow, "HelixFlow::create").collect();
+            ElementHandle::find_by_element_id(&helixflow, "TaskBox::create").collect();
         assert_eq!(creates_.len(), 1);
         let create = &creates_[0];
 

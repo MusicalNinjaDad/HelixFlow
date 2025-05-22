@@ -9,7 +9,7 @@ fn main() {
         build_all_slint_modules(&slint_config);
     }
 
-    slint_build::compile_with_config("src/task.slint", slint_config).unwrap();
+    slint_build::compile_with_config("src/helixflow.slint", slint_config).unwrap();
 }
 
 fn build_all_slint_modules(slint_config: &slint_build::CompilerConfiguration) {

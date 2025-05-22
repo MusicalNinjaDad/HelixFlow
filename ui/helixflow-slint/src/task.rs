@@ -40,12 +40,12 @@ mod test {
     include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
 
     #[fixture]
-    fn helixflow() -> HelixFlow {
+    fn taskbox() -> TaskBox {
         init_no_event_loop();
-        let helixflow = HelixFlow::new().unwrap();
+        let taskbox = TaskBox::new().unwrap();
 
         // List all elements on test failure
-        let all_elements = ElementHandle::query_descendants(&helixflow.root_element()).find_all();
+        let all_elements = ElementHandle::query_descendants(&taskbox.root_element()).find_all();
         for (i, element) in all_elements.iter().enumerate() {
             let type_name = element.type_name();
             let label = element
@@ -55,13 +55,13 @@ mod test {
         }
         dbg!(all_elements.len());
 
-        helixflow
+        taskbox
     }
 
     #[rstest]
-    fn correct_elements(helixflow: HelixFlow) {
-        let inputboxes = ElementHandle::find_by_element_type_name(&helixflow, "LineEdit");
-        let buttons = ElementHandle::find_by_element_type_name(&helixflow, "Button");
+    fn correct_elements(taskbox: TaskBox) {
+        let inputboxes = ElementHandle::find_by_element_type_name(&taskbox, "LineEdit");
+        let buttons = ElementHandle::find_by_element_type_name(&taskbox, "Button");
 
         let expected_inputboxes = ["Task name"];
         let expected_buttons = ["Create"];
@@ -76,8 +76,8 @@ mod test {
         use super::*;
 
         #[rstest]
-        fn task_name(helixflow: HelixFlow) {
-            let task_name = get!(&helixflow, "HelixFlow::task_name_entry");
+        fn task_name(taskbox: TaskBox) {
+            let task_name = get!(&taskbox, "TaskBox::task_name_entry");
             assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
             assert_eq!(
                 task_name.accessible_placeholder_text().unwrap().as_str(),
@@ -88,16 +88,16 @@ mod test {
         }
 
         #[rstest]
-        fn task_id(helixflow: HelixFlow) {
-            let task_id = get!(&helixflow, "HelixFlow::task_id_display");
+        fn task_id(taskbox: TaskBox) {
+            let task_id = get!(&taskbox, "TaskBox::task_id_display");
             assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
             assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
             assert_eq!(task_id.accessible_role(), Some(AccessibleRole::Text));
         }
 
         #[rstest]
-        fn create(helixflow: HelixFlow) {
-            let create = get!(&helixflow, "HelixFlow::create");
+        fn create(taskbox: TaskBox) {
+            let create = get!(&taskbox, "TaskBox::create");
             assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
             assert_eq!(create.accessible_role(), Some(AccessibleRole::Button));
         }
@@ -107,14 +107,14 @@ mod test {
         use super::*;
 
         #[rstest]
-        fn button_click(helixflow: HelixFlow) {
-            let hf = helixflow.as_weak();
-            helixflow.on_create_task(move || {
+        fn button_click(taskbox: TaskBox) {
+            let hf = taskbox.as_weak();
+            taskbox.on_create_task(move || {
                 hf.unwrap().set_task_id("1".into());
             });
 
-            let create = get!(&helixflow, "HelixFlow::create");
-            let task_id = get!(&helixflow, "HelixFlow::task_id_display");
+            let create = get!(&taskbox, "TaskBox::create");
+            let task_id = get!(&taskbox, "TaskBox::task_id_display");
 
             assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
             create.invoke_accessible_default_action();

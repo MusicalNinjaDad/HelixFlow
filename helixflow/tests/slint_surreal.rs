@@ -44,7 +44,7 @@ fn test_slint_with_surreal() {
         assert!(helixflow.get_create_enabled());
 
         let creates_: Vec<_> =
-            ElementHandle::find_by_element_id(&helixflow, "HelixFlow::create").collect();
+            ElementHandle::find_by_element_id(&helixflow, "TaskBox::create").collect();
         assert_eq!(creates_.len(), 1);
         let create = &creates_[0];
 
