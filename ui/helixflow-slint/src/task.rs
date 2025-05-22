@@ -164,9 +164,12 @@ mod test {
 
         #[rstest]
         fn button_click(taskbox: TaskBox) {
-            let hf = taskbox.as_weak();
+            let tb = taskbox.as_weak();
             taskbox.on_create_task(move || {
-                hf.unwrap().set_task_id("1".into());
+                CurrentTask::get(&tb.unwrap()).set_task(SlintTask {
+                    name: "".into(),
+                    id: "1".into(),
+                });
             });
 
             let create = get!(&taskbox, "TaskBox::create");

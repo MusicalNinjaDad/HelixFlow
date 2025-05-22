@@ -3,6 +3,10 @@ export struct SlintTask {
     id: string,
 }
 
+export global CurrentTask {
+    in-out property <SlintTask> task;
+}
+
 import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
     export component TaskBox inherits Window {
     callback create_task;
@@ -17,7 +21,7 @@ import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
 
         task_id_display := Text {
             accessible_label: "Task ID";
-            text: root.task_id;
+            text: CurrentTask.task.id;
             accessible_value: self.text;
         }
 
