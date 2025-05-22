@@ -1,9 +1,9 @@
 use helixflow_core::task::{Task, TaskCreationError, TaskResult};
-use slint::ToSharedString;
+use slint::{Global, ToSharedString};
 use std::rc::Weak;
 use uuid::Uuid;
 
-use crate::{HelixFlow, SlintTask};
+use crate::{CurrentTask, HelixFlow, SlintTask};
 
 impl TryFrom<SlintTask> for Task {
     type Error = TaskCreationError;
@@ -52,8 +52,7 @@ pub mod blocking {
             let task_name: String = helixflow.get_task_name().into();
             let task = Task::new(task_name, None);
             task.create(backend.as_ref()).unwrap();
-            let task_id = task.id;
-            helixflow.set_task_id(format!("{task_id}").into());
+            CurrentTask::get(&helixflow).set_task(task.into());
             helixflow.set_create_enabled(true);
         }
     }

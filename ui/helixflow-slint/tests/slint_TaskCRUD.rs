@@ -4,11 +4,11 @@
 use std::rc::Rc;
 
 use i_slint_backend_testing::{ElementHandle, ElementRoot};
-use slint::ComponentHandle;
 use slint::platform::PointerEventButton;
+use slint::{ComponentHandle, Global};
 
-use helixflow_core::task::blocking::TestBackend;
-use helixflow_slint::{HelixFlow, task::blocking::create_task, test::*};
+use helixflow_core::task::{Task, blocking::TestBackend};
+use helixflow_slint::{CurrentTask, HelixFlow, task::blocking::create_task, test::*};
 
 #[test]
 fn test_set_task_id() {
@@ -28,23 +28,34 @@ fn test_set_task_id() {
     slint::spawn_local(async move {
         let helixflow = hf.unwrap();
         helixflow.set_task_name("A valid task".into());
-        assert_eq!(helixflow.get_task_id(), "");
+
+        let task_id_display = get!(&helixflow, "TaskBox::task_id_display");
+        assert_eq!(task_id_display.accessible_value().unwrap(), "");
+
+        let create = get!(&helixflow, "TaskBox::create");
         assert!(helixflow.get_create_enabled());
-
-        let creates_: Vec<_> =
-            ElementHandle::find_by_element_id(&helixflow, "TaskBox::create").collect();
-        assert_eq!(creates_.len(), 1);
-        let create = &creates_[0];
-
+        assert!(create.accessible_enabled().unwrap());
         create.single_click(PointerEventButton::Left).await;
+
         slint::quit_event_loop().unwrap();
     })
     .unwrap();
 
     run_slint_loop!();
 
-    let task_uuid = uuid::Uuid::parse_str(&helixflow.get_task_id()).unwrap();
-    assert!(!task_uuid.is_nil());
-    assert_eq!(task_uuid.get_version(), Some(uuid::Version::SortRand));
+    let current_task: Task = CurrentTask::get(&helixflow).get_task().try_into().unwrap();
+    assert_eq!(current_task.name, "A valid task");
+    assert_eq!(current_task.description, None);
+    assert!(!current_task.id.is_nil());
+    assert_eq!(current_task.id.get_version(), Some(uuid::Version::SortRand));
+
+    let task_id_display = get!(&helixflow, "TaskBox::task_id_display");
+    assert_eq!(
+        task_id_display.accessible_value().unwrap(),
+        current_task.id.to_string()
+    );
+
+    let create = get!(&helixflow, "TaskBox::create");
     assert!(helixflow.get_create_enabled());
+    assert!(create.accessible_enabled().unwrap());
 }
