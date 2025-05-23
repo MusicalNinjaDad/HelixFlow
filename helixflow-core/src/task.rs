@@ -95,7 +95,13 @@ pub mod blocking {
         pub fn all<B: StorageBackend>(
             backend: &B,
         ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
-            Ok(backend.get_tasks()?)
+            Ok(backend.get_all_tasks()?)
+        }
+        pub fn tasks<B: StorageBackend>(
+            &self,
+            backend: &B,
+        ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
+            Ok(backend.get_tasks_in(&self.id)?)
         }
     }
 
@@ -110,7 +116,10 @@ pub mod blocking {
         /// Get an existing task from the backend
         fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
 
-        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
+        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
+
+        fn get_tasks_in(&self, id: &Uuid)
+        -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
     }
 
     #[derive(Clone, Copy)]
@@ -142,7 +151,7 @@ pub mod blocking {
                 _ => Err(anyhow!("Unknown task ID: {}", id)),
             }
         }
-        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             Ok(vec![
                 Ok(Task {
                     name: "Task 1".into(),
@@ -156,6 +165,12 @@ pub mod blocking {
                 }),
             ]
             .into_iter())
+        }
+        fn get_tasks_in(
+            &self,
+            id: &Uuid,
+        ) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+            self.get_all_tasks()
         }
     }
 
@@ -242,7 +257,7 @@ pub mod blocking {
         }
 
         #[test]
-        fn list_tasks() {
+        fn list_all_tasks() {
             let backend = TestBackend;
             let task1 = Task {
                 name: "Task 1".into(),
@@ -257,6 +272,33 @@ pub mod blocking {
             let all_tasks: Vec<TaskResult<Task>> = TaskList::all(&backend).unwrap().collect();
             assert_eq!(
                 all_tasks
+                    .into_iter()
+                    .map(|task| task.unwrap())
+                    .collect::<Vec<Task>>(),
+                vec![task1, task2]
+            );
+        }
+
+        #[test]
+        fn tasks_in_tasklist() {
+            let backend = TestBackend;
+            let backlog = TaskList {
+                name: "Backlog".into(),
+                id: uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"),
+            };
+            let task1 = Task {
+                name: "Task 1".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                description: None,
+            };
+            let task2 = Task {
+                name: "Task 2".into(),
+                id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                description: None,
+            };
+            let tasks: Vec<TaskResult<Task>> = backlog.tasks(&backend).unwrap().collect();
+            assert_eq!(
+                tasks
                     .into_iter()
                     .map(|task| task.unwrap())
                     .collect::<Vec<Task>>(),

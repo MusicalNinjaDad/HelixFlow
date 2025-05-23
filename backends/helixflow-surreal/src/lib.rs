@@ -105,10 +105,15 @@ pub mod blocking {
             }
         }
 
-        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             let tasks: Vec<SurrealTask> =
                 self.rt.block_on(self.db.select("Tasks").into_future())?;
             Ok(tasks.into_iter().map(|task| task.try_into()))
+        }
+
+        fn get_tasks_in(&self, _id: &Uuid) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+            todo!();
+            Ok(std::iter::empty()) // Fake return an empty iterator to avoid compilation errors
         }
     }
 
@@ -213,7 +218,7 @@ pub mod blocking {
             let task2 = Task::new("Task 2", None);
             backend.create(&task2).unwrap();
             let all_tasks: Vec<Task> = backend
-                .get_tasks()
+                .get_all_tasks()
                 .unwrap()
                 .map(|task| task.unwrap())
                 .collect();
