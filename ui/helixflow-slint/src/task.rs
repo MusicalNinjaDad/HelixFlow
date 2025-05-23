@@ -232,5 +232,24 @@ mod test_slint {
             assert_components!(inputboxes, expected_inputboxes);
             assert_components!(buttons, expected_buttons);
         }
+
+        #[rstest]
+        fn quick_create(backlog: Backlog) {
+            let bl = backlog.as_weak();
+            backlog.on_quick_create_task(move |taskname| {
+                let newtask = SlintTask {
+                    name: taskname,
+                    id: "1".into()
+                };
+                bl.unwrap().set_backlog_name(format!("{}: {}", newtask.id, newtask.name).into());
+            });
+            let backlog_title = get!(&backlog, "Backlog::backlog_title");
+            assert_eq!(backlog_title.accessible_value().unwrap().as_str(), "Backlog");
+            let new_task_entry = get!(&backlog, "Backlog::new_task_entry");
+            new_task_entry.set_accessible_value("New task");
+            let quick_create = get!(&backlog, "Backlog::quick_create_button");
+            quick_create.invoke_accessible_default_action();
+            assert_eq!(backlog_title.accessible_value().unwrap().as_str(), "1: New task");
+        }
     }
 }
