@@ -95,6 +95,8 @@ pub mod test {
     #[doc(hidden)]
     /// Assert that the actual components match those expected based on the accessibility labels.
     ///
+    /// This will _ignore_ any elements _without_ an accessibility label.
+    ///
     /// ```rust,no_run
     /// let inputboxes: impl Iterator<Item = ElementHandle> = ElementHandle::find_by_element_type_name(&taskbox, "LineEdit");
     ///
@@ -106,9 +108,12 @@ pub mod test {
         ($actual:expr, $expected:expr) => {
             assert_eq_unordered_sort!(
                 $actual
-                    .map(|element| element.accessible_label().unwrap())
+                    .filter_map(|element| element.accessible_label())
                     .collect::<Vec<_>>(),
-                $expected.iter().map(|&label| label.into()).collect()
+                $expected.iter().map(|&label| label.into()).collect(),
+                "`{}` does not match `{}`",
+                stringify!($actual),
+                stringify!($expected)
             );
         };
     }
