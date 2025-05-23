@@ -207,6 +207,8 @@ mod test_slint {
     }
 
     mod backlog {
+        use slint::{ModelRc, StandardListViewItem};
+
         use super::*;
 
         #[fixture]
@@ -237,6 +239,16 @@ mod test_slint {
             assert_components!(buttons, expected_buttons);
             assert_components!(lists, expected_lists);
             assert_components!(tasks, expected_tasks);
+        }
+
+        #[rstest]
+        fn show_tasks(backlog: Backlog) {
+            let backlog_entries: ModelRc<StandardListViewItem> = [
+                "Task 1".into(), "Task 2".into()
+            ].into();
+            backlog.set_tasks(backlog_entries);
+            let tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
+            assert_components!(tasks, ["Task 1", "Task 2"]);
         }
 
         #[rstest]

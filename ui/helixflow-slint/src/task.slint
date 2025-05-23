@@ -37,6 +37,7 @@ export component TaskBox inherits Window {
 
 export component Backlog inherits Window {
     in property <string> backlog_name: "Backlog";
+    in property <[StandardListViewItem]> tasks;
     callback quick_create_task(SlintTask);
     VerticalBox {
         backlog_title := Text {
@@ -62,6 +63,7 @@ export component Backlog inherits Window {
 
         tasks_list := StandardListView {
             accessible-label: "Tasks";
+            model: root.tasks;
         }
     }
 }
