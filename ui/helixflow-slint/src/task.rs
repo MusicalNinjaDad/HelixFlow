@@ -243,9 +243,8 @@ mod test_slint {
 
         #[rstest]
         fn show_tasks(backlog: Backlog) {
-            let backlog_entries: ModelRc<StandardListViewItem> = [
-                "Task 1".into(), "Task 2".into()
-            ].into();
+            let backlog_entries: ModelRc<StandardListViewItem> =
+                ["Task 1".into(), "Task 2".into()].into();
             backlog.set_tasks(backlog_entries);
             let tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
             assert_components!(tasks, ["Task 1", "Task 2"]);
@@ -256,15 +255,22 @@ mod test_slint {
             let bl = backlog.as_weak();
             backlog.on_quick_create_task(move |mut task: SlintTask| {
                 task.id = "1".into();
-                bl.unwrap().set_backlog_name(format!("{}: {}", task.id, task.name).into());
+                bl.unwrap()
+                    .set_backlog_name(format!("{}: {}", task.id, task.name).into());
             });
             let backlog_title = get!(&backlog, "Backlog::backlog_title");
-            assert_eq!(backlog_title.accessible_value().unwrap().as_str(), "Backlog");
+            assert_eq!(
+                backlog_title.accessible_value().unwrap().as_str(),
+                "Backlog"
+            );
             let new_task_entry = get!(&backlog, "Backlog::new_task_entry");
             new_task_entry.set_accessible_value("New task");
             let quick_create = get!(&backlog, "Backlog::quick_create_button");
             quick_create.invoke_accessible_default_action();
-            assert_eq!(backlog_title.accessible_value().unwrap().as_str(), "1: New task");
+            assert_eq!(
+                backlog_title.accessible_value().unwrap().as_str(),
+                "1: New task"
+            );
         }
     }
 }

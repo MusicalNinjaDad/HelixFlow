@@ -36,7 +36,10 @@ impl Task {
 }
 
 /// Iterator of `Task`s
-pub struct TaskList;
+pub struct TaskList {
+    pub name: Cow<'static, str>,
+    pub id: Uuid,
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskCreationError {
@@ -92,10 +95,6 @@ pub mod blocking {
         pub fn all<B: StorageBackend>(
             backend: &B,
         ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
-            // You cannot propagate an error from within the iterator itself using `map(|task| task?)` because the `?` operator only works in functions that return a `Result`, not in closures.
-            // If you want to propagate errors from individual items, you should return an iterator of `TaskResult<Task>`, not just `Task`.
-            // So, change the return type to `TaskResult<impl Iterator<Item = TaskResult<Task>>>` and just return the iterator directly:
-
             Ok(backend.get_tasks()?)
         }
     }
