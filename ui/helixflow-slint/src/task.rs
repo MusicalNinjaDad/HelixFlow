@@ -125,80 +125,112 @@ mod test_slint {
 
     include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
 
-    #[fixture]
-    fn taskbox() -> TaskBox {
-        init_no_event_loop();
-
-        let taskbox = TaskBox::new().unwrap();
-        list_elements!(&taskbox);
-        taskbox
-    }
-
-    #[rstest]
-    fn correct_elements(taskbox: TaskBox) {
-        let inputboxes = ElementHandle::find_by_element_type_name(&taskbox, "LineEdit");
-        let buttons = ElementHandle::find_by_element_type_name(&taskbox, "Button");
-
-        let expected_inputboxes = ["Task name"];
-        let expected_buttons = ["Create"];
-
-        assert_components!(inputboxes, expected_inputboxes);
-        assert_components!(buttons, expected_buttons);
-    }
-
-    mod accessibility {
-        use i_slint_backend_testing::AccessibleRole;
-
+    mod taskbox {
         use super::*;
 
-        #[rstest]
-        fn task_name(taskbox: TaskBox) {
-            let task_name = get!(&taskbox, "TaskBox::task_name_entry");
-            assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
-            assert_eq!(
-                task_name.accessible_placeholder_text().unwrap().as_str(),
-                "Task name"
-            );
-            assert_eq!(task_name.accessible_value().unwrap().as_str(), "");
-            assert_eq!(task_name.accessible_role(), Some(AccessibleRole::TextInput));
+        #[fixture]
+        fn taskbox() -> TaskBox {
+            init_no_event_loop();
+
+            let taskbox = TaskBox::new().unwrap();
+            list_elements!(&taskbox);
+            taskbox
         }
 
         #[rstest]
-        fn task_id(taskbox: TaskBox) {
-            let task_id = get!(&taskbox, "TaskBox::task_id_display");
-            assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
-            assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
-            assert_eq!(task_id.accessible_role(), Some(AccessibleRole::Text));
+        fn correct_elements(taskbox: TaskBox) {
+            let inputboxes = ElementHandle::find_by_element_type_name(&taskbox, "LineEdit");
+            let buttons = ElementHandle::find_by_element_type_name(&taskbox, "Button");
+
+            let expected_inputboxes = ["Task name"];
+            let expected_buttons = ["Create"];
+
+            assert_components!(inputboxes, expected_inputboxes);
+            assert_components!(buttons, expected_buttons);
         }
 
-        #[rstest]
-        fn create(taskbox: TaskBox) {
-            let create = get!(&taskbox, "TaskBox::create");
-            assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
-            assert_eq!(create.accessible_role(), Some(AccessibleRole::Button));
+        mod accessibility {
+            use i_slint_backend_testing::AccessibleRole;
+
+            use super::*;
+
+            #[rstest]
+            fn task_name(taskbox: TaskBox) {
+                let task_name = get!(&taskbox, "TaskBox::task_name_entry");
+                assert_eq!(task_name.accessible_label().unwrap().as_str(), "Task name");
+                assert_eq!(
+                    task_name.accessible_placeholder_text().unwrap().as_str(),
+                    "Task name"
+                );
+                assert_eq!(task_name.accessible_value().unwrap().as_str(), "");
+                assert_eq!(task_name.accessible_role(), Some(AccessibleRole::TextInput));
+            }
+
+            #[rstest]
+            fn task_id(taskbox: TaskBox) {
+                let task_id = get!(&taskbox, "TaskBox::task_id_display");
+                assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
+                assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
+                assert_eq!(task_id.accessible_role(), Some(AccessibleRole::Text));
+            }
+
+            #[rstest]
+            fn create(taskbox: TaskBox) {
+                let create = get!(&taskbox, "TaskBox::create");
+                assert_eq!(create.accessible_label().unwrap().as_str(), "Create");
+                assert_eq!(create.accessible_role(), Some(AccessibleRole::Button));
+            }
         }
-    }
 
-    mod callbacks {
-        use super::*;
+        mod callbacks {
+            use super::*;
 
-        #[rstest]
-        fn button_click(taskbox: TaskBox) {
-            let tb = taskbox.as_weak();
-            taskbox.on_create_task(move || {
-                CurrentTask::get(&tb.unwrap()).set_task(SlintTask {
-                    name: "".into(),
-                    id: "1".into(),
+            #[rstest]
+            fn button_click(taskbox: TaskBox) {
+                let tb = taskbox.as_weak();
+                taskbox.on_create_task(move || {
+                    CurrentTask::get(&tb.unwrap()).set_task(SlintTask {
+                        name: "".into(),
+                        id: "1".into(),
+                    });
                 });
-            });
 
-            let create = get!(&taskbox, "TaskBox::create");
-            let task_id = get!(&taskbox, "TaskBox::task_id_display");
+                let create = get!(&taskbox, "TaskBox::create");
+                let task_id = get!(&taskbox, "TaskBox::task_id_display");
 
-            assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
-            create.invoke_accessible_default_action();
-            assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
-            assert_eq!(task_id.accessible_value().unwrap().as_str(), "1");
+                assert_eq!(task_id.accessible_value().unwrap().as_str(), "");
+                create.invoke_accessible_default_action();
+                assert_eq!(task_id.accessible_label().unwrap().as_str(), "Task ID");
+                assert_eq!(task_id.accessible_value().unwrap().as_str(), "1");
+            }
+        }
+    }
+
+    mod backlog {
+        use super::*;
+
+        #[fixture]
+        fn backlog() -> Backlog {
+            init_no_event_loop();
+
+            let backlog = Backlog::new().unwrap();
+            list_elements!(&backlog);
+            backlog
+        }
+
+        #[rstest]
+        fn correct_elements(backlog: Backlog) {
+            let texts = ElementHandle::find_by_element_type_name(&backlog, "Text");
+            let inputboxes = ElementHandle::find_by_element_type_name(&backlog, "LineEdit");
+            let buttons = ElementHandle::find_by_element_type_name(&backlog, "Button");
+
+            let expected_texts = ["Backlog name"];
+            let expected_inputboxes = ["New task name"];
+            let expected_buttons = ["Create new task"];
+
+            assert_components!(texts, expected_texts);
+            assert_components!(inputboxes, expected_inputboxes);
+            assert_components!(buttons, expected_buttons);
         }
     }
 }
