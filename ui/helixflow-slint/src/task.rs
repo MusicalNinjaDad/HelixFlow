@@ -223,14 +223,17 @@ mod test_slint {
             let texts = ElementHandle::find_by_element_type_name(&backlog, "Text");
             let inputboxes = ElementHandle::find_by_element_type_name(&backlog, "LineEdit");
             let buttons = ElementHandle::find_by_element_type_name(&backlog, "Button");
+            let lists = ElementHandle::find_by_element_type_name(&backlog, "StandardListView");
 
             let expected_texts = ["Backlog name"];
             let expected_inputboxes = ["New task name"];
             let expected_buttons = ["Create new task"];
+            let expected_lists = ["Tasks"];
 
             assert_components!(texts, expected_texts);
             assert_components!(inputboxes, expected_inputboxes);
             assert_components!(buttons, expected_buttons);
+            assert_components!(lists, expected_lists);
         }
 
         #[rstest]

@@ -7,7 +7,7 @@ export global CurrentTask {
     in-out property <SlintTask> task;
 }
 
-import { Button, LineEdit, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox, StandardListView } from "std-widgets.slint";
 
 export component TaskBox inherits Window {
     callback create_task;
@@ -50,13 +50,18 @@ export component Backlog inherits Window {
                 accessible-label: "New task name";
                 placeholder-text: self.accessible-label;
             }
+
             quick_create_button := Button {
                 accessible-label: "Create new task";
                 text: "+";
                 clicked => {
-                    root.quick_create_task({name: new_task_entry.text})
+                    root.quick_create_task({ name: new_task_entry.text })
                 }
             }
+        }
+
+        tasks_list := StandardListView {
+            accessible-label: "Tasks";
         }
     }
 }
