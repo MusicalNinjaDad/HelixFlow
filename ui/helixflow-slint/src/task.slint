@@ -37,7 +37,7 @@ export component TaskBox inherits Window {
 
 export component Backlog inherits Window {
     in property <string> backlog_name: "Backlog";
-    callback quick_create_task(string);
+    callback quick_create_task(SlintTask);
     VerticalBox {
         backlog_title := Text {
             accessible-label: "Backlog name";
@@ -53,7 +53,9 @@ export component Backlog inherits Window {
             quick_create_button := Button {
                 accessible-label: "Create new task";
                 text: "+";
-                clicked => {root.quick_create_task(new_task_entry.text)}
+                clicked => {
+                    root.quick_create_task({name: new_task_entry.text})
+                }
             }
         }
     }

@@ -236,12 +236,9 @@ mod test_slint {
         #[rstest]
         fn quick_create(backlog: Backlog) {
             let bl = backlog.as_weak();
-            backlog.on_quick_create_task(move |taskname| {
-                let newtask = SlintTask {
-                    name: taskname,
-                    id: "1".into()
-                };
-                bl.unwrap().set_backlog_name(format!("{}: {}", newtask.id, newtask.name).into());
+            backlog.on_quick_create_task(move |mut task: SlintTask| {
+                task.id = "1".into();
+                bl.unwrap().set_backlog_name(format!("{}: {}", task.id, task.name).into());
             });
             let backlog_title = get!(&backlog, "Backlog::backlog_title");
             assert_eq!(backlog_title.accessible_value().unwrap().as_str(), "Backlog");
