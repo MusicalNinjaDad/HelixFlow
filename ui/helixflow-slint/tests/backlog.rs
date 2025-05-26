@@ -1,7 +1,7 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
-use helixflow_core::task::{TaskList, blocking::TestBackend};
+use helixflow_core::task::{blocking::{TestBackend, CRUD}, TaskList};
 use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use uuid::uuid;
@@ -45,6 +45,6 @@ fn initialise_backlog() {
 
     let backend = Rc::new(TestBackend);
 
-    let backlog_data = TaskList::get(&backend, uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"));
+    let backlog_data = TaskList::get(backend.as_ref(), &uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"));
     backlog.init(backlog_data);
 }
