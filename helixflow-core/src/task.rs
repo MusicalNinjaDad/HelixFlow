@@ -110,7 +110,8 @@ pub mod blocking {
 
     impl CRUD for TaskList {
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
-            todo!()
+            let created_tasklist = backend.create_tasklist(self)?;
+            Ok(())
         }
 
         fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<TaskList> {
@@ -120,11 +121,17 @@ pub mod blocking {
 
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
-        /// Create a new task in the backend, update the `task.id`.
+        /// Create a new task in the backend.
         ///
         /// The returned Task should be the actual stored record from the backend - to allow
         /// validation by `Task::create()`
         fn create_task(&self, task: &Task) -> anyhow::Result<Task>;
+
+        /// Create a TaskList in the backend
+        ///
+        /// The returned TaskList should be the actual stored record from the backend - to allow
+        /// validation by `TaskList::create()`
+        fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList>;
 
         /// Create a task in the backend, linked to a TaskList
         fn create_task_in_tasklist(&self, task: &Task, tasklist: &TaskList)
@@ -154,6 +161,10 @@ pub mod blocking {
                 }
                 _ => Ok(task.clone()),
             }
+        }
+
+        fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList> {
+            todo!();
         }
 
         fn create_task_in_tasklist(

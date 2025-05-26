@@ -94,6 +94,13 @@ pub mod blocking {
             Ok(checktask)
         }
 
+        fn create_tasklist(
+            &self,
+            tasklist: &helixflow_core::task::TaskList,
+        ) -> anyhow::Result<helixflow_core::task::TaskList> {
+            todo!();
+        }
+
         fn create_task_in_tasklist(
             &self,
             task: &Task,
