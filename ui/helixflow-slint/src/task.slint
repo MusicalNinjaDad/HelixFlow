@@ -7,7 +7,7 @@ export global CurrentTask {
     in-out property <SlintTask> task;
 }
 
-import { Button, LineEdit, VerticalBox, HorizontalBox, StandardListView } from "std-widgets.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox, StandardListView, ListView } from "std-widgets.slint";
 
 export component TaskBox inherits Window {
     callback create_task;
@@ -37,7 +37,7 @@ export component TaskBox inherits Window {
 
 export component Backlog inherits Window {
     in property <string> backlog_name: "Backlog";
-    in property <[StandardListViewItem]> tasks;
+    in property <[SlintTask]> tasks: [{name: "Task 1"}, {name: "Task 2"}];
     callback quick_create_task(SlintTask);
     VerticalBox {
         backlog_title := Text {
@@ -61,9 +61,14 @@ export component Backlog inherits Window {
             }
         }
 
-        tasks_list := StandardListView {
+        tasks_list := ListView {
             accessible-label: "Tasks";
-            model: root.tasks;
+            for task in root.tasks : Rectangle {
+                height: self.min-height;
+                Text {
+                    text: task.name;
+                }
+            }
         }
     }
 }

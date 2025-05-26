@@ -110,7 +110,7 @@ pub mod test {
                 $actual
                     .filter_map(|element| element.accessible_label())
                     .collect::<Vec<_>>(),
-                $expected.iter().map(|&label| label.into()).collect(),
+                $expected.iter().map(|label| label.to_shared_string()).collect(),
                 "`{}` does not match `{}`",
                 stringify!($actual),
                 stringify!($expected)

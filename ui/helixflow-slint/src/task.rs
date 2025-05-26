@@ -1,6 +1,6 @@
 use helixflow_core::task::{Task, TaskCreationError, TaskResult};
-use slint::{Global, ToSharedString};
-use std::rc::Weak;
+use slint::{Global, SharedString, ToSharedString};
+use std::{fmt::Display, rc::Weak};
 use uuid::Uuid;
 
 use crate::{CurrentTask, HelixFlow, SlintTask};
@@ -27,6 +27,18 @@ impl From<Task> for SlintTask {
             name: task.name.into_owned().into(),
             id: task.id.to_shared_string(),
         }
+    }
+}
+
+impl From<SlintTask> for SharedString {
+    fn from(task: SlintTask) -> Self {
+        task.name
+    }
+}
+
+impl Display for SlintTask {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 
@@ -118,15 +130,16 @@ mod test_rs {
 
 #[cfg(test)]
 mod test_slint {
+    use super::*;
     use crate::test::*;
     use rstest::*;
 
+    use slint::ComponentHandle;
     use i_slint_backend_testing::init_no_event_loop;
-
-    include!(concat!(env!("OUT_DIR"), "/src/task.rs"));
 
     mod taskbox {
         use super::*;
+        use crate::TaskBox;
 
         #[fixture]
         fn taskbox() -> TaskBox {
@@ -184,6 +197,7 @@ mod test_slint {
 
         mod callbacks {
             use super::*;
+            use slint::{Global};
 
             #[rstest]
             fn button_click(taskbox: TaskBox) {
@@ -207,9 +221,10 @@ mod test_slint {
     }
 
     mod backlog {
-        use slint::{ModelRc, StandardListViewItem};
-
         use super::*;
+        use crate::Backlog;
+
+        use slint::{ModelRc, VecModel};
 
         #[fixture]
         fn backlog() -> Backlog {
@@ -243,11 +258,13 @@ mod test_slint {
 
         #[rstest]
         fn show_tasks(backlog: Backlog) {
-            let backlog_entries: ModelRc<StandardListViewItem> =
-                ["Task 1".into(), "Task 2".into()].into();
-            backlog.set_tasks(backlog_entries);
-            let tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
-            assert_components!(tasks, ["Task 1", "Task 2"]);
+            let task1 = SlintTask {name: "Task 1".into(), id: "1".into()};
+            let task2 = SlintTask {name: "Task 2".into(), id: "2".into()};
+            let tasks = vec![task1, task2];
+            let backlog_entries: VecModel<SlintTask> = tasks.clone().into();
+            backlog.set_tasks(ModelRc::new(backlog_entries));
+            let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
+            assert_components!(backlog_tasks, &tasks);
         }
 
         #[rstest]
