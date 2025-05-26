@@ -1,7 +1,10 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
-use helixflow_core::task::{blocking::{TestBackend, CRUD}, TaskList};
+use helixflow_core::task::{
+    TaskList,
+    blocking::{CRUD, StorageBackend, TestBackend},
+};
 use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use uuid::uuid;
@@ -36,7 +39,6 @@ fn update_tasks_in_event_loop() {
 }
 
 #[test]
-// #[cfg(false)]
 fn initialise_backlog() {
     prepare_slint!();
 
@@ -46,6 +48,17 @@ fn initialise_backlog() {
     let backend = Rc::new(TestBackend);
     let be = Rc::downgrade(&backend);
 
-    let backlog_data = TaskList::get(backend.as_ref(), &uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549")).unwrap();
+    let backlog_id = uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549");
+
+    let backlog_data = TaskList::get(backend.as_ref(), &backlog_id).unwrap();
     backlog.init(backlog_data, be);
+
+    assert_eq!(backlog.get_backlog_name(), "Test TaskList 1");
+    let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
+    let expected_tasks: Vec<SlintTask> = backend
+        .get_tasks_in(&backlog_id)
+        .unwrap()
+        .map(|task| task.unwrap().into())
+        .collect();
+    assert_values!(backlog_tasks, expected_tasks);
 }
