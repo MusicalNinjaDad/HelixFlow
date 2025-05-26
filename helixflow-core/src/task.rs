@@ -342,6 +342,18 @@ pub mod blocking {
                 vec![task1, task2]
             );
         }
+
+        #[test]
+        fn create_task_in_tasklist() {
+            let backend = TestBackend;
+            let backlog = TaskList {
+                name: "Backlog".into(),
+                id: uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"),
+            };
+            let task3 = Task::new("Test task 3", None);
+            let new_task = backend.create_task_in_tasklist(&task3, &backlog).unwrap();
+            assert_eq!(new_task, task3);
+        }
     }
 }
 
