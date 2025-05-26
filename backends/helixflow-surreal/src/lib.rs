@@ -78,7 +78,7 @@ pub mod blocking {
     }
 
     impl<C: Connection> StorageBackend for SurrealDb<C> {
-        fn create(&self, task: &Task) -> anyhow::Result<Task> {
+        fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
             dbg!(task);
             let dbtask: SurrealTask = self
                 .rt
@@ -94,7 +94,7 @@ pub mod blocking {
             Ok(checktask)
         }
 
-        fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
+        fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
             let dbtask: Option<SurrealTask> = self
                 .rt
                 .block_on(self.db.select(("Tasks", *id)).into_future())?;
@@ -192,7 +192,7 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 1", None);
                 let backend = SurrealDb::new().unwrap();
-                backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
+                backend.create_task(&new_task).unwrap(); // Unwrap to check we don't get any errors
             }
         }
 
@@ -201,8 +201,8 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 2", None);
                 let backend = SurrealDb::new().unwrap();
-                backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-                let stored_task = backend.get(&new_task.id).unwrap();
+                backend.create_task(&new_task).unwrap(); // Unwrap to check we don't get any errors
+                let stored_task = backend.get_task(&new_task.id).unwrap();
                 assert_eq!(stored_task, new_task);
             }
         }
@@ -212,7 +212,7 @@ pub mod blocking {
             {
                 let backend = SurrealDb::new().unwrap();
                 let id = Uuid::now_v7();
-                let err = backend.get(&id).unwrap_err();
+                let err = backend.get_task(&id).unwrap_err();
                 assert_eq!(format!("{}", err), format!("Unknown task ID: {}", id));
             }
         }
@@ -221,9 +221,9 @@ pub mod blocking {
         fn test_get_tasks() {
             let backend = SurrealDb::new().unwrap();
             let task1 = Task::new("Task 1", None);
-            backend.create(&task1).unwrap();
+            backend.create_task(&task1).unwrap();
             let task2 = Task::new("Task 2", None);
-            backend.create(&task2).unwrap();
+            backend.create_task(&task2).unwrap();
             let all_tasks: Vec<Task> = backend
                 .get_all_tasks()
                 .unwrap()

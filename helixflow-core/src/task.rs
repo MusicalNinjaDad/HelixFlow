@@ -74,7 +74,7 @@ pub mod blocking {
     impl CRUD for Task {
         /// Create this task in a given storage backend.
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
-            let created_task = backend.create(self)?;
+            let created_task = backend.create_task(self)?;
             if &created_task == self {
                 Ok(())
             } else {
@@ -87,7 +87,7 @@ pub mod blocking {
 
         /// Get task from `backend` by `id`
         fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Task> {
-            Ok(backend.get(id)?)
+            Ok(backend.get_task(id)?)
         }
     }
 
@@ -124,10 +124,10 @@ pub mod blocking {
         ///
         /// The returned Task should be the actual stored record from the backend - to allow
         /// validation by `Task::create()`
-        fn create(&self, task: &Task) -> anyhow::Result<Task>;
+        fn create_task(&self, task: &Task) -> anyhow::Result<Task>;
 
         /// Get an existing task from the backend
-        fn get(&self, id: &Uuid) -> anyhow::Result<Task>;
+        fn get_task(&self, id: &Uuid) -> anyhow::Result<Task>;
 
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
 
@@ -142,7 +142,7 @@ pub mod blocking {
 
     /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend for TestBackend {
-        fn create(&self, task: &Task) -> anyhow::Result<Task> {
+        fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
             match task.name {
                 Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
                 Cow::Borrowed("MISMATCH") => {
@@ -151,7 +151,7 @@ pub mod blocking {
                 _ => Ok(task.clone()),
             }
         }
-        fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
+        fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
             match id.to_string().as_str() {
                 "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
                     name: "Task 1".into(),
@@ -273,7 +273,7 @@ pub mod blocking {
         fn test_get_invalid_task() {
             let backend = TestBackend;
             let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
-            let err = backend.get(&id).unwrap_err();
+            let err = backend.get_task(&id).unwrap_err();
             assert_eq!(
                 format!("{}", err),
                 "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2"
