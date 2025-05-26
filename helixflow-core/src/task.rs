@@ -35,10 +35,24 @@ impl Task {
     }
 }
 
-/// Iterator of `Task`s
+/// A list of tasks
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct TaskList {
     pub name: Cow<'static, str>,
     pub id: Uuid,
+}
+
+impl TaskList {
+    /// Create a new `TaskList` with valid `id`, suitable for usage as database key.
+    pub fn new<S>(name: S) -> TaskList
+    where
+        S: Into<Cow<'static, str>>,
+    {
+        TaskList {
+            name: name.into(),
+            id: Uuid::now_v7(),
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

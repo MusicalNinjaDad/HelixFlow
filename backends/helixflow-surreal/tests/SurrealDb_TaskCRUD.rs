@@ -8,7 +8,7 @@ mod blocking {
 
     use super::*;
 
-    use helixflow_core::task::blocking::CRUD;
+    use helixflow_core::task::{TaskList, blocking::CRUD};
     use helixflow_surreal::blocking::SurrealDb;
 
     #[test]
@@ -42,5 +42,12 @@ mod blocking {
                 format!("backend error: Unknown task ID: {}", id)
             );
         }
+    }
+
+    #[test]
+    fn create_tasklist() {
+        let backend = SurrealDb::new().unwrap();
+        let tasklist = TaskList::new("Test tasklist");
+        tasklist.create(&backend).unwrap();
     }
 }

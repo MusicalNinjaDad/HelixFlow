@@ -16,7 +16,7 @@ use surrealdb::{
 
 use serde::{Deserialize, Serialize};
 
-use helixflow_core::task::{Task, TaskCreationError, TaskResult};
+use helixflow_core::task::{Task, TaskCreationError, TaskList, TaskResult};
 
 #[derive(Debug, Serialize, Deserialize)]
 /// SurrealDb returns a `Thing` as `id`.
@@ -52,6 +52,41 @@ impl From<&Task> for SurrealTask {
             name: task.name.clone(),
             id: Thing::from(("Tasks", Id::Uuid(task.id.into()))),
             description: task.description.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+/// SurrealDb returns a `Thing` as `id`.
+///
+/// A `Thing` is a wierd SurrealDb Struct with a `tb` (= "table") and `id` field,
+/// both as owned `String`s :-x (!!)
+struct SurrealTaskList {
+    name: Cow<'static, str>,
+    id: Thing,
+}
+
+impl TryFrom<SurrealTaskList> for TaskList {
+    type Error = TaskCreationError;
+    fn try_from(tasklist: SurrealTaskList) -> TaskResult<TaskList> {
+        let id = match tasklist.id.id {
+            Id::Uuid(id) => Ok(id.into()),
+            _ => Err(TaskCreationError::InvalidID {
+                id: tasklist.id.id.to_string(),
+            }),
+        };
+        Ok(TaskList {
+            name: tasklist.name,
+            id: id?,
+        })
+    }
+}
+
+impl From<&TaskList> for SurrealTaskList {
+    fn from(tasklist: &TaskList) -> Self {
+        SurrealTaskList {
+            name: tasklist.name.clone(),
+            id: Thing::from(("Tasklists", Id::Uuid(tasklist.id.into()))),
         }
     }
 }
@@ -94,18 +129,28 @@ pub mod blocking {
             Ok(checktask)
         }
 
-        fn create_tasklist(
-            &self,
-            tasklist: &helixflow_core::task::TaskList,
-        ) -> anyhow::Result<helixflow_core::task::TaskList> {
-            todo!();
+        fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList> {
+            dbg!(tasklist);
+            let dbtasklist: SurrealTaskList = self
+                .rt
+                .block_on(
+                    self.db
+                        .create("Tasklists")
+                        .content(SurrealTaskList::from(tasklist))
+                        .into_future(),
+                )?
+                .with_context(|| format!("Creating new record for {:#?} in SurrealDb", tasklist))?;
+            let check_tasklist = dbtasklist.try_into()?;
+            dbg!(&check_tasklist);
+            Ok(check_tasklist)
         }
 
         fn create_task_in_tasklist(
             &self,
             task: &Task,
-            tasklist: &helixflow_core::task::TaskList,
+            tasklist: &TaskList,
         ) -> anyhow::Result<Task> {
+            dbg!(tasklist);
             todo!();
         }
 
