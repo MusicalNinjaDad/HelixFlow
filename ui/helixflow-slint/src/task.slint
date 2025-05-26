@@ -37,7 +37,7 @@ export component TaskBox inherits Window {
 
 export component Backlog inherits Window {
     in property <string> backlog_name: "Backlog";
-    in property <[SlintTask]> tasks;
+    in property <[SlintTask]> tasks: [{name: "Error loading tasks"}, {name: "from database"}];
     callback quick_create_task(SlintTask);
     VerticalBox {
         backlog_title := Text {
@@ -63,9 +63,10 @@ export component Backlog inherits Window {
 
         tasks_list := ListView {
             accessible-label: "Tasks";
-            for task in root.tasks : Rectangle {
+            for task[index] in root.tasks : Rectangle {
                 height: self.min-height;
                 Text {
+                    accessible-label: "Task " + (index + 1);
                     text: task.name;
                 }
             }
