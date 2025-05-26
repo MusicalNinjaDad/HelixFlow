@@ -68,7 +68,7 @@ pub mod blocking {
         Self: Sized,
     {
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()>;
-        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Task>;
+        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Self>;
     }
 
     impl CRUD for Task {
@@ -92,7 +92,6 @@ pub mod blocking {
     }
 
     impl TaskList {
-
         // TODO: Update this to return a `TaskResult<TaskList>`
         pub fn all<B: StorageBackend>(
             backend: &B,
@@ -106,6 +105,16 @@ pub mod blocking {
             backend: &B,
         ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
             Ok(backend.get_tasks_in(&self.id)?)
+        }
+    }
+
+    impl CRUD for TaskList {
+        fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
+            todo!()
+        }
+
+        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<TaskList> {
+            Ok(backend.get_tasklist(id)?)
         }
     }
 
@@ -124,6 +133,8 @@ pub mod blocking {
 
         fn get_tasks_in(&self, id: &Uuid)
         -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
+
+        fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<TaskList>;
     }
 
     #[derive(Clone, Copy)]
@@ -175,6 +186,15 @@ pub mod blocking {
             id: &Uuid,
         ) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             self.get_all_tasks()
+        }
+        fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<TaskList> {
+            match id.to_string().as_str() {
+                "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(TaskList {
+                    name: "Test TaskList 1".into(),
+                    id: *id,
+                }),
+                _ => Err(anyhow!("Unknown tasklist ID: {}", id)),
+            }
         }
     }
 

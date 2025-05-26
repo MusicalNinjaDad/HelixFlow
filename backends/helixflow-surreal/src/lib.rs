@@ -118,6 +118,10 @@ pub mod blocking {
             todo!();
             Ok(std::iter::empty()) // Fake return an empty iterator to avoid compilation errors
         }
+
+        fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<helixflow_core::task::TaskList> {
+            todo!()
+        }
     }
 
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
