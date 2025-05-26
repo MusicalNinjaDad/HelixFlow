@@ -180,7 +180,14 @@ pub mod blocking {
         }
 
         fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<helixflow_core::task::TaskList> {
-            todo!()
+            let db_tasklist: Option<SurrealTaskList> = self
+                .rt
+                .block_on(self.db.select(("Tasklists", *id)).into_future())?;
+            if let Some(tasklist) = db_tasklist {
+                Ok(tasklist.try_into()?)
+            } else {
+                Err(anyhow!("Unknown tasklist ID: {}", id))
+            }
         }
     }
 

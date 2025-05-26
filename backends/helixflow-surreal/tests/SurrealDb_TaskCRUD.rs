@@ -49,5 +49,7 @@ mod blocking {
         let backend = SurrealDb::new().unwrap();
         let tasklist = TaskList::new("Test tasklist");
         tasklist.create(&backend).unwrap();
+        let stored_tasklist = TaskList::get(&backend, &tasklist.id).unwrap();
+        assert_eq!(stored_tasklist, tasklist);
     }
 }
