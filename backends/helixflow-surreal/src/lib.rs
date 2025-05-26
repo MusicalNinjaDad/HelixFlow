@@ -94,6 +94,14 @@ pub mod blocking {
             Ok(checktask)
         }
 
+        fn create_task_in_tasklist(
+            &self,
+            task: &Task,
+            tasklist: &helixflow_core::task::TaskList,
+        ) -> anyhow::Result<Task> {
+            todo!();
+        }
+
         fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
             let dbtask: Option<SurrealTask> = self
                 .rt

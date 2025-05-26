@@ -126,6 +126,10 @@ pub mod blocking {
         /// validation by `Task::create()`
         fn create_task(&self, task: &Task) -> anyhow::Result<Task>;
 
+        /// Create a task in the backend, linked to a TaskList
+        fn create_task_in_tasklist(&self, task: &Task, tasklist: &TaskList)
+        -> anyhow::Result<Task>;
+
         /// Get an existing task from the backend
         fn get_task(&self, id: &Uuid) -> anyhow::Result<Task>;
 
@@ -151,6 +155,15 @@ pub mod blocking {
                 _ => Ok(task.clone()),
             }
         }
+
+        fn create_task_in_tasklist(
+            &self,
+            task: &Task,
+            tasklist: &TaskList,
+        ) -> anyhow::Result<Task> {
+            todo!();
+        }
+
         fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
             match id.to_string().as_str() {
                 "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
@@ -304,7 +317,7 @@ pub mod blocking {
         }
 
         #[test]
-        fn tasks_in_tasklist() {
+        fn get_tasks_in_tasklist() {
             let backend = TestBackend;
             let backlog = TaskList {
                 name: "Backlog".into(),
