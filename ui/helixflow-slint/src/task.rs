@@ -72,11 +72,12 @@ pub mod blocking {
     }
 
     impl Backlog {
-        pub fn init<BKEND>(&self, contents: TaskList, backend: Weak<BKEND>)
+        pub fn init<BKEND>(&self, backend: Weak<BKEND>, id: &Uuid)
         where
             BKEND: StorageBackend + 'static,
         {
             let backend = backend.upgrade().unwrap();
+            let contents = TaskList::get(backend.as_ref(), id).unwrap();
             self.set_backlog_name(contents.name.clone().into_owned().into());
             let backlog_entries: VecModel<SlintTask> = contents
                 .tasks(backend.as_ref())

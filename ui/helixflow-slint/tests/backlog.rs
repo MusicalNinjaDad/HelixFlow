@@ -50,8 +50,7 @@ fn initialise_backlog() {
 
     let backlog_id = uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549");
 
-    let backlog_data = TaskList::get(backend.as_ref(), &backlog_id).unwrap();
-    backlog.init(backlog_data, be);
+    backlog.init(be, &backlog_id);
 
     assert_eq!(backlog.get_backlog_name(), "Test TaskList 1");
     let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
