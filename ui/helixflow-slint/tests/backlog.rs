@@ -1,9 +1,7 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
-use helixflow_core::task::{
-    blocking::{StorageBackend, TestBackend},
-};
+use helixflow_core::task::blocking::{StorageBackend, TestBackend};
 use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use uuid::uuid;
