@@ -36,7 +36,7 @@ fn update_tasks_in_event_loop() {
 }
 
 #[test]
-#[cfg(false)]
+// #[cfg(false)]
 fn initialise_backlog() {
     prepare_slint!();
 
@@ -44,7 +44,8 @@ fn initialise_backlog() {
     list_elements!(&backlog);
 
     let backend = Rc::new(TestBackend);
+    let be = Rc::downgrade(&backend);
 
-    let backlog_data = TaskList::get(backend.as_ref(), &uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"));
-    backlog.init(backlog_data);
+    let backlog_data = TaskList::get(backend.as_ref(), &uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549")).unwrap();
+    backlog.init(backlog_data, be);
 }

@@ -43,8 +43,11 @@ impl Display for SlintTask {
 }
 
 pub mod blocking {
+    use crate::{Backlog};
+
     use super::*;
-    use helixflow_core::task::blocking::{CRUD, StorageBackend};
+    use helixflow_core::task::{blocking::{StorageBackend, CRUD}, TaskList};
+    use slint::{ModelRc, VecModel};
 
     pub fn create_task<BKEND>(
         helixflow: slint::Weak<HelixFlow>,
@@ -62,6 +65,22 @@ pub mod blocking {
             task.create(backend.as_ref()).unwrap();
             CurrentTask::get(&helixflow).set_task(task.into());
             helixflow.set_create_enabled(true);
+        }
+    }
+
+    impl Backlog {
+        pub fn init<BKEND>(&self, contents: TaskList, backend: Weak<BKEND>)
+        where
+            BKEND: StorageBackend + 'static,
+        {
+            let backend = backend.upgrade().unwrap();
+            self.set_backlog_name(contents.name.clone().into_owned().into());
+            let backlog_entries: VecModel<SlintTask> = contents
+            .tasks(backend.as_ref())
+            .unwrap()
+            .map(|task| task.unwrap().into())
+            .collect();
+            self.set_tasks(ModelRc::new(backlog_entries));
         }
     }
 }
