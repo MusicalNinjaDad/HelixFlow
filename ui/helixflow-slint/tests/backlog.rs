@@ -1,7 +1,7 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
-use helixflow_core::task::{blocking::TestBackend, TaskList};
+use helixflow_core::task::{TaskList, blocking::TestBackend};
 use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use uuid::uuid;
@@ -39,7 +39,7 @@ fn update_tasks_in_event_loop() {
 #[cfg(false)]
 fn initialise_backlog() {
     prepare_slint!();
-    
+
     let backlog = Backlog::new().unwrap();
     list_elements!(&backlog);
 
