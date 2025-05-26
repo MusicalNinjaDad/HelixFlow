@@ -67,7 +67,8 @@ export component Backlog inherits Window {
                 height: self.min-height;
                 Text {
                     accessible-label: "Task " + (index + 1);
-                    text: task.name;
+                    accessible-value: task.name;
+                    text: self.accessible-value;
                 }
             }
         }
