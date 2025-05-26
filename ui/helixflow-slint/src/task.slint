@@ -37,7 +37,7 @@ export component TaskBox inherits Window {
 
 export component Backlog inherits Window {
     in property <string> backlog_name: "Backlog";
-    in property <[SlintTask]> tasks: [{name: "Task 1"}, {name: "Task 2"}];
+    in property <[SlintTask]> tasks;
     callback quick_create_task(SlintTask);
     VerticalBox {
         backlog_title := Text {

@@ -240,7 +240,7 @@ mod test_slint {
             let texts = ElementHandle::find_by_element_type_name(&backlog, "Text");
             let inputboxes = ElementHandle::find_by_element_type_name(&backlog, "LineEdit");
             let buttons = ElementHandle::find_by_element_type_name(&backlog, "Button");
-            let lists = ElementHandle::find_by_element_type_name(&backlog, "StandardListView");
+            let lists = ElementHandle::find_by_element_type_name(&backlog, "ListView");
             let tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
 
             let expected_texts = ["Backlog name"];
