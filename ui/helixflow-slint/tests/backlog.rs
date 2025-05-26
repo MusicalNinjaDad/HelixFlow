@@ -56,7 +56,8 @@ fn initialise_backlog() {
     let expected_tasks: Vec<SlintTask> = backend
         .get_tasks_in(&backlog_id)
         .unwrap()
-        .map(|task| task.unwrap().into())
+        .map(Result::unwrap)
+        .map(Into::into)
         .collect();
     assert_values!(backlog_tasks, expected_tasks);
 }
