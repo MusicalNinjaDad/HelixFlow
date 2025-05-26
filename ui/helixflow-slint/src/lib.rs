@@ -57,14 +57,16 @@ pub mod test {
         ($root:expr) => {
             let all_elements = ElementHandle::query_descendants(&$root.root_element()).find_all();
             for (i, element) in all_elements.iter().enumerate() {
+                let elementid = element.id().unwrap_or_else(|| "<no ID>".into());
+                let role = element.accessible_role();
                 let type_name = element.type_name();
                 let label = element
                     .accessible_label()
                     .unwrap_or_else(|| "<no label>".into());
-                let elementid = element.id().unwrap_or_else(|| "<no ID>".into());
+                let value = element.accessible_value().unwrap_or_else(|| "<no value>".into());
                 println!(
-                    "Element {i}: id = {elementid}, type = {:#?}, label = {label}",
-                    type_name
+                    "Element {i}: id = {elementid}, role = {:#?}, type = {:#?}, label = {label}, value = {value}",
+                    role, type_name
                 );
             }
         };
@@ -110,7 +112,10 @@ pub mod test {
                 $actual
                     .filter_map(|element| element.accessible_label())
                     .collect::<Vec<_>>(),
-                $expected.iter().map(|label| label.to_shared_string()).collect(),
+                $expected
+                    .iter()
+                    .map(|label| label.to_shared_string())
+                    .collect(),
                 "`{}` does not match `{}`",
                 stringify!($actual),
                 stringify!($expected)
