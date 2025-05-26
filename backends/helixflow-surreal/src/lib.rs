@@ -111,7 +111,10 @@ pub mod blocking {
             Ok(tasks.into_iter().map(|task| task.try_into()))
         }
 
-        fn get_tasks_in(&self, _id: &Uuid) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+        fn get_tasks_in(
+            &self,
+            _id: &Uuid,
+        ) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             todo!();
             Ok(std::iter::empty()) // Fake return an empty iterator to avoid compilation errors
         }
