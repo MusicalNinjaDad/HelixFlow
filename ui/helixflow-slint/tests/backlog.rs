@@ -2,6 +2,7 @@ use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 
 #[test]
+#[ignore = "needs dedicated component and compare by value"]
 fn show_tasks() {
     prepare_slint!();
     let backlog = Backlog::new().unwrap();

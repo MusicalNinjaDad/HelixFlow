@@ -221,6 +221,8 @@ mod test_slint {
     }
 
     mod backlog {
+        use slint::{ModelRc, VecModel};
+
         use super::*;
         use crate::Backlog;
 
@@ -251,16 +253,24 @@ mod test_slint {
             assert_components!(lists, expected_lists);
         }
 
-        // #[rstest]
-        // fn show_tasks(backlog: Backlog) {
-        //     let task1 = SlintTask {name: "Task 1".into(), id: "1".into()};
-        //     let task2 = SlintTask {name: "Task 2".into(), id: "2".into()};
-        //     let tasks = vec![task1, task2];
-        //     let backlog_entries: VecModel<SlintTask> = tasks.clone().into();
-        //     backlog.set_tasks(ModelRc::new(backlog_entries));
-        //     let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
-        //     assert_components!(backlog_tasks, &tasks);
-        // }
+        #[rstest]
+        #[ignore = "needs dedicated component and compare by value"]
+        fn show_tasks(backlog: Backlog) {
+            let task1 = SlintTask {
+                name: "Task 1".into(),
+                id: "1".into(),
+            };
+            let task2 = SlintTask {
+                name: "Task 2".into(),
+                id: "2".into(),
+            };
+            let tasks = vec![task1, task2];
+            let backlog_entries: VecModel<SlintTask> = tasks.clone().into();
+            backlog.set_tasks(ModelRc::new(backlog_entries));
+            list_elements!(&backlog);
+            let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
+            assert_components!(backlog_tasks, &tasks);
+        }
 
         #[rstest]
         fn quick_create(backlog: Backlog) {
