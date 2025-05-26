@@ -124,4 +124,41 @@ pub mod test {
         };
     }
     pub use assert_components;
+
+    #[macro_export]
+    #[doc(hidden)]
+    /// Assert that the actual components match those expected based on the accessibility values.
+    ///
+    /// This will _ignore_ any elements _without_ an accessibility value.
+    ///
+    /// ```rust,no_run
+    /// let task1 = SlintTask {
+    ///                 name: "Task 1".into(),
+    ///                 id: "1".into(),
+    ///             };
+    ///             let task2 = SlintTask {
+    ///                 name: "Task 2".into(),
+    ///                 id: "2".into(),
+    ///             };
+    ///             let tasks = vec![task1, task2];
+    /// let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
+    /// assert_values!(backlog_tasks, &tasks);
+    /// ```
+    macro_rules! assert_values {
+        ($actual:expr, $expected:expr) => {
+            assert_eq_unordered_sort!(
+                $actual
+                    .filter_map(|element| element.accessible_value())
+                    .collect::<Vec<_>>(),
+                $expected
+                    .iter()
+                    .map(|label| label.to_shared_string())
+                    .collect(),
+                "`{}` does not match `{}`",
+                stringify!($actual),
+                stringify!($expected)
+            );
+        };
+    }
+    pub use assert_values;
 }

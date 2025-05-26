@@ -238,26 +238,31 @@ mod test_slint {
         #[rstest]
         fn correct_elements(backlog: Backlog) {
             let texts = ElementHandle::find_by_element_type_name(&backlog, "Text");
-            let inputboxes = ElementHandle::find_by_element_type_name(&backlog, "LineEdit");
-            let buttons = ElementHandle::find_by_element_type_name(&backlog, "Button");
-            let lists = ElementHandle::find_by_element_type_name(&backlog, "ListView");
-            let tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
-
             let expected_texts = ["Backlog name"];
-            let expected_inputboxes = ["New task name"];
-            let expected_buttons = ["Create new task"];
-            let expected_lists = ["Tasks"];
-            let expected_tasks = ["Task 1", "Task 2"];
-
             assert_components!(texts, expected_texts);
+
+            let inputboxes = ElementHandle::find_by_element_type_name(&backlog, "LineEdit");
+            let expected_inputboxes = ["New task name"];
             assert_components!(inputboxes, expected_inputboxes);
+
+            let buttons = ElementHandle::find_by_element_type_name(&backlog, "Button");
+            let expected_buttons = ["Create new task"];
             assert_components!(buttons, expected_buttons);
+
+            let lists = ElementHandle::find_by_element_type_name(&backlog, "ListView");
+            let expected_lists = ["Tasks"];
             assert_components!(lists, expected_lists);
-            assert_components!(tasks, expected_tasks);
+
+            let tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
+            let expected_task_labels = ["Task 1", "Task 2"];
+            assert_components!(tasks, expected_task_labels);
+
+            let tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
+            let expected_task_values = ["Error loading tasks", "from database"];
+            assert_values!(tasks, expected_task_values);
         }
 
         #[rstest]
-        #[ignore = "needs dedicated component and compare by value"]
         fn show_tasks(backlog: Backlog) {
             let task1 = SlintTask {
                 name: "Task 1".into(),
@@ -271,8 +276,8 @@ mod test_slint {
             let backlog_entries: VecModel<SlintTask> = tasks.clone().into();
             backlog.set_tasks(ModelRc::new(backlog_entries));
             list_elements!(&backlog);
-            let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
-            assert_components!(backlog_tasks, &tasks);
+            let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
+            assert_values!(backlog_tasks, &tasks);
         }
 
         #[rstest]
