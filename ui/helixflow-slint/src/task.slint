@@ -9,6 +9,21 @@ export global CurrentTask {
 
 import { Button, LineEdit, VerticalBox, HorizontalBox, StandardListView, ListView } from "std-widgets.slint";
 
+component TaskListItem {
+    in property <SlintTask> task;
+    in property <int> index;
+    accessible-role: list-item;
+    accessible-label: "Task " + (root.index + 1);
+    accessible-value: task.name;
+    Rectangle {
+        height: self.min-height;
+        Text {
+            accessible-role: none;
+            text: root.accessible-value;
+        }
+    }
+}
+
 export component TaskBox inherits Window {
     callback create_task;
     in property <bool> create_enabled: true;
@@ -37,7 +52,7 @@ export component TaskBox inherits Window {
 
 export component Backlog inherits Window {
     in property <string> backlog_name: "Backlog";
-    in property <[SlintTask]> tasks: [{name: "Error loading tasks"}, {name: "from database"}];
+    in property <[SlintTask]> tasks: [{ name: "Error loading tasks" }, { name: "from database" }];
     callback quick_create_task(SlintTask);
     VerticalBox {
         backlog_title := Text {
@@ -63,13 +78,9 @@ export component Backlog inherits Window {
 
         tasks_list := ListView {
             accessible-label: "Tasks";
-            for task[index] in root.tasks : Rectangle {
-                height: self.min-height;
-                Text {
-                    accessible-label: "Task " + (index + 1);
-                    accessible-value: task.name;
-                    text: self.accessible-value;
-                }
+            for task[index] in root.tasks: TaskListItem {
+                task: task;
+                index: index;
             }
         }
     }
