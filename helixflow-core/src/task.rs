@@ -92,11 +92,15 @@ pub mod blocking {
     }
 
     impl TaskList {
+
+        // TODO: Update this to return a `TaskResult<TaskList>`
         pub fn all<B: StorageBackend>(
             backend: &B,
         ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
             Ok(backend.get_all_tasks()?)
         }
+
+        /// Get all Tasks belonging to this TaskList
         pub fn tasks<B: StorageBackend>(
             &self,
             backend: &B,
