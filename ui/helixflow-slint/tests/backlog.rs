@@ -2,17 +2,16 @@ use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 
 #[test]
-#[ignore = "needs dedicated component and compare by value"]
-fn show_tasks() {
+fn update_tasks_in_event_loop() {
     prepare_slint!();
     let backlog = Backlog::new().unwrap();
     list_elements!(&backlog);
     let task1 = SlintTask {
-        name: "Task 1".into(),
+        name: "Test task 1".into(),
         id: "1".into(),
     };
     let task2 = SlintTask {
-        name: "Task 2".into(),
+        name: "Test task 2".into(),
         id: "2".into(),
     };
     let tasks = vec![task1, task2];
@@ -25,7 +24,8 @@ fn show_tasks() {
     })
     .unwrap();
     run_slint_loop!();
+    println!("===Loop finished===");
     list_elements!(&backlog);
-    let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "ListItem");
-    assert_components!(backlog_tasks, &tasks);
+    let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
+    assert_values!(backlog_tasks, tasks);
 }

@@ -265,11 +265,11 @@ mod test_slint {
         #[rstest]
         fn show_tasks(backlog: Backlog) {
             let task1 = SlintTask {
-                name: "Task 1".into(),
+                name: "Test task 1".into(),
                 id: "1".into(),
             };
             let task2 = SlintTask {
-                name: "Task 2".into(),
+                name: "Test task 2".into(),
                 id: "2".into(),
             };
             let tasks = vec![task1, task2];
