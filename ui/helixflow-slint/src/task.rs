@@ -78,12 +78,12 @@ pub mod blocking {
         {
             let backend = backend.upgrade().unwrap();
             let contents = TaskList::get(backend.as_ref(), id).unwrap();
-            self.set_backlog_name(contents.name.clone().into_owned().into());
             let backlog_entries: VecModel<SlintTask> = contents
                 .tasks(backend.as_ref())
                 .unwrap()
                 .map(|task| task.unwrap().into())
                 .collect();
+            self.set_backlog_name(contents.name.into_owned().into());
             self.set_tasks(ModelRc::new(backlog_entries));
         }
     }
