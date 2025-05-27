@@ -191,10 +191,25 @@ pub mod blocking {
 
         fn get_tasks_in(
             &self,
-            _id: &Uuid,
+            id: &Uuid,
         ) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
-            todo!();
-            Ok(std::iter::empty()) // Fake return an empty iterator to avoid compilation errors
+            let tasklist = Thing::from(("Tasklists", Id::Uuid(id.clone().into())));
+            dbg!(&tasklist);
+            let mut tasks = self.rt.block_on(
+                self.db
+                    .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
+                    .bind(("tl", tasklist))
+                    .into_future(),
+            )?;
+            dbg!(&tasks);
+            let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks")?;
+            dbg!(&tasks);
+            Ok(tasks
+                .into_iter()
+                .next()
+                .unwrap()
+                .into_iter()
+                .map(|task| task.try_into()))
         }
 
         fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<helixflow_core::task::TaskList> {
