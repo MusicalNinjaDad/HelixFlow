@@ -90,6 +90,11 @@ impl From<&TaskList> for SurrealTaskList {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Link {
+    r#in: Thing,
+    out: Thing,
+}
 
 pub mod blocking {
 
@@ -150,8 +155,21 @@ pub mod blocking {
             task: &Task,
             tasklist: &TaskList,
         ) -> anyhow::Result<Task> {
+            // TODO make this atomic
             dbg!(tasklist);
-            todo!();
+            let db_tasklist = self.get_tasklist(&tasklist.id)?;
+            let db_task = self.create_task(task)?;
+            let confirmed_link: Vec<Link> = self.rt.block_on(
+                self.db
+                    .insert("contains")
+                    .relation(Link {
+                        r#in: SurrealTaskList::from(&db_tasklist).id,
+                        out: SurrealTask::from(&db_task).id,
+                    })
+                    .into_future(),
+            )?;
+            dbg!(confirmed_link);
+            Ok(db_task)
         }
 
         fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {

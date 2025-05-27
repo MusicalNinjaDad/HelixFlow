@@ -105,6 +105,17 @@ pub mod blocking {
         }
     }
 
+    impl Task {
+        pub fn create_linked<B: StorageBackend>(
+            &self,
+            backend: &B,
+            tasklist: &TaskList,
+        ) -> TaskResult<()> {
+            let created_task = backend.create_task_in_tasklist(self, tasklist)?;
+            Ok(())
+        }
+    }
+
     impl TaskList {
         // TODO: Update this to return a `TaskResult<TaskList>`
         pub fn all<B: StorageBackend>(

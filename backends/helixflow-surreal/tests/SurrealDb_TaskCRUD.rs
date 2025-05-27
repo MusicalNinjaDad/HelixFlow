@@ -52,4 +52,19 @@ mod blocking {
         let stored_tasklist = TaskList::get(&backend, &tasklist.id).unwrap();
         assert_eq!(stored_tasklist, tasklist);
     }
+
+    #[test]
+    fn create_task_in_tasklist() {
+        let backend = SurrealDb::new().unwrap();
+        let tasklist = TaskList::new("Test tasklist");
+        tasklist.create(&backend).unwrap();
+        let task = Task::new("Test Task 2", None);
+        task.create_linked(&backend, &tasklist).unwrap();
+        let tasks: Vec<Task> = tasklist
+            .tasks(&backend)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert_eq!(tasks, vec![task]);
+    }
 }
