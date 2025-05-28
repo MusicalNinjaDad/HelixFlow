@@ -97,8 +97,8 @@ pub mod blocking {
     where
         Self: Sized,
     {
-        fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()>;
-        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Self>;
+        fn create<B: Store<Self>>(&self, backend: &B) -> TaskResult<()>;
+        fn get<B: Store<Self>>(backend: &B, id: &Uuid) -> TaskResult<Self>;
     }
 
     /// `impl LinkFrom<LEFT> for RIGHT` gives `Left -> links_to -> Right`
@@ -108,8 +108,8 @@ pub mod blocking {
 
     impl CRUD for Task {
         /// Create this task in a given storage backend.
-        fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
-            let created_task = backend.create_task(self)?;
+        fn create<B: Store<Task>>(&self, backend: &B) -> TaskResult<()> {
+            let created_task = backend.create(self)?;
             if &created_task == self {
                 Ok(())
             } else {
@@ -121,8 +121,8 @@ pub mod blocking {
         }
 
         /// Get task from `backend` by `id`
-        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Task> {
-            Ok(backend.get_task(id)?)
+        fn get<B: Store<Task>>(backend: &B, id: &Uuid) -> TaskResult<Task> {
+            Ok(backend.get(id)?)
         }
     }
 
@@ -155,13 +155,13 @@ pub mod blocking {
     }
 
     impl CRUD for TaskList {
-        fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
-            let created_tasklist = backend.create_tasklist(self)?;
+        fn create<B: Store<TaskList>>(&self, backend: &B) -> TaskResult<()> {
+            let created_tasklist = backend.create(self)?;
             Ok(())
         }
 
-        fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<TaskList> {
-            Ok(backend.get_tasklist(id)?)
+        fn get<B: Store<TaskList>>(backend: &B, id: &Uuid) -> TaskResult<TaskList> {
+            backend.get(id)
         }
     }
 
@@ -171,6 +171,7 @@ pub mod blocking {
         ///
         /// The returned Task should be the actual stored record from the backend - to allow
         /// validation by `Task::create()`
+        #[deprecated = "Replaced by Store trait"]
         fn create_task(&self, task: &Task) -> anyhow::Result<Task>;
 
         /// Create a TaskList in the backend
@@ -184,6 +185,7 @@ pub mod blocking {
         -> anyhow::Result<Task>;
 
         /// Get an existing task from the backend
+        #[deprecated = "Replaced by Store trait"]
         fn get_task(&self, id: &Uuid) -> anyhow::Result<Task>;
 
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
@@ -246,6 +248,15 @@ pub mod blocking {
                     id: *id,
                 }),
             }
+        }
+    }
+
+    impl Store<TaskList> for TestBackend {
+        fn create(&self, item: &TaskList) -> TaskResult<TaskList> {
+            todo!()
+        }
+        fn get(&self, id: &Uuid) -> TaskResult<TaskList> {
+            todo!()
         }
     }
 
@@ -380,7 +391,7 @@ pub mod blocking {
         fn test_get_invalid_task() {
             let backend = TestBackend;
             let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
-            let err = backend.get_task(&id).unwrap_err();
+            let err = Task::get(&backend, &id).unwrap_err();
             assert_eq!(
                 format!("{}", &err),
                 "404 No Task found with id 0196b4c9-8447-78db-ae8a-be68a8095aa2"
