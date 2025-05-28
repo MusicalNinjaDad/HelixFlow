@@ -47,8 +47,7 @@ pub mod blocking {
 
     use super::*;
     use helixflow_core::task::{
-        TaskList,
-        blocking::{CRUD, StorageBackend},
+        blocking::{StorageBackend, Store, CRUD}, TaskList
     };
     use slint::{ModelRc, VecModel};
 
@@ -57,7 +56,7 @@ pub mod blocking {
         backend: Weak<BKEND>,
     ) -> impl FnMut() + 'static
     where
-        BKEND: StorageBackend + 'static,
+        BKEND: Store<Task> + 'static,
     {
         move || {
             let helixflow = helixflow.unwrap();
@@ -74,7 +73,7 @@ pub mod blocking {
     impl Backlog {
         pub fn init<BKEND>(&self, backend: Weak<BKEND>, id: &Uuid)
         where
-            BKEND: StorageBackend + 'static,
+            BKEND: Store<TaskList> + StorageBackend + 'static,
         {
             let backend = backend.upgrade().unwrap();
             let contents = TaskList::get(backend.as_ref(), id).unwrap();

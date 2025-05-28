@@ -99,7 +99,7 @@ struct Link {
 pub mod blocking {
 
     use super::*;
-    use helixflow_core::task::blocking::StorageBackend;
+    use helixflow_core::task::blocking::{StorageBackend, Store};
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
     /// This requires some form of instantiation function, the exact specification of which will depend
@@ -115,6 +115,24 @@ pub mod blocking {
 
         /// A dedicated tokio runtime to allow for blocking operations
         rt: Rc<tokio::runtime::Runtime>,
+    }
+
+    impl<C: Connection> Store<Task> for SurrealDb<C> {
+        fn create(&self, item: &Task) -> TaskResult<Task> {
+            todo!()
+        }
+        fn get(&self, id: &Uuid) -> TaskResult<Task> {
+            todo!()
+        }
+    }
+
+    impl<C: Connection> Store<TaskList> for SurrealDb<C> {
+        fn create(&self, item: &TaskList) -> TaskResult<TaskList> {
+            todo!()
+        }
+        fn get(&self, id: &Uuid) -> TaskResult<TaskList> {
+            todo!()
+        }
     }
 
     impl<C: Connection> StorageBackend for SurrealDb<C> {
