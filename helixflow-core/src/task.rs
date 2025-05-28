@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use uuid::Uuid;
 use uuid::uuid;
 /// A Task
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Task {
     // TODO check value of using a Cow here ... are we really saving when passing around - or would
     // it be better to have something that is `Copy`?

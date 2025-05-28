@@ -8,6 +8,7 @@ mod blocking {
 
     use super::*;
 
+    use assert_unordered::assert_eq_unordered_sort;
     use helixflow_core::task::{TaskList, blocking::CRUD};
     use helixflow_surreal::blocking::SurrealDb;
 
@@ -82,6 +83,7 @@ mod blocking {
             .unwrap()
             .map(Result::unwrap)
             .collect();
-        assert_eq!(tasks, vec![task2, task3]);
+        // TODO - Return in sorted order using a sort-criteria stored in the relationship
+        assert_eq_unordered_sort!(tasks, vec![task2, task3]);
     }
 }
