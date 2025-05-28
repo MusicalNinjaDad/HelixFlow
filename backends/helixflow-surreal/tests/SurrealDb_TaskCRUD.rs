@@ -9,7 +9,10 @@ mod blocking {
     use super::*;
 
     use assert_unordered::assert_eq_unordered_sort;
-    use helixflow_core::task::{TaskList, blocking::CRUD};
+    use helixflow_core::task::{
+        TaskList,
+        blocking::{CRUD, LinkFrom},
+    };
     use helixflow_surreal::blocking::SurrealDb;
 
     #[test]

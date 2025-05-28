@@ -85,6 +85,11 @@ pub mod blocking {
         fn get<B: StorageBackend>(backend: &B, id: &Uuid) -> TaskResult<Self>;
     }
 
+    /// `impl LinkFrom<LEFT> for RIGHT` gives `Left -> links_to -> Right`
+    pub trait LinkFrom<LEFT> {
+        fn create_linked<B: StorageBackend>(&self, backend: &B, left: &LEFT) -> TaskResult<()>;
+    }
+
     impl CRUD for Task {
         /// Create this task in a given storage backend.
         fn create<B: StorageBackend>(&self, backend: &B) -> TaskResult<()> {
@@ -105,8 +110,8 @@ pub mod blocking {
         }
     }
 
-    impl Task {
-        pub fn create_linked<B: StorageBackend>(
+    impl LinkFrom<TaskList> for Task {
+        fn create_linked<B: StorageBackend>(
             &self,
             backend: &B,
             tasklist: &TaskList,

@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use helixflow_core::task::blocking::LinkFrom;
 use helixflow_core::task::{Task, TaskList, blocking::CRUD};
 use helixflow_slint::SlintTask;
 use slint::platform::PointerEventButton;
