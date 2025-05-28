@@ -70,9 +70,25 @@ pub enum TaskCreationError {
     #[error("task id ({id:?}) is not a valid UUID v7")]
     InvalidID { id: String },
     // TODO Rename to TaskCRUDError and add "Unknown ID"
+    #[error("404 Not found: {item:#?}")]
+    NotFound { item: Box<dyn HelixFlowItem> },
+}
+
+pub enum LinkType {
+    Contains,
 }
 
 pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
+
+/// Marker trait for our data items
+pub trait HelixFlowItem
+where
+    Self: std::fmt::Debug + Send + Sync,
+{
+}
+
+impl HelixFlowItem for Task {}
+impl HelixFlowItem for TaskList {}
 
 pub mod blocking {
     use super::*;
@@ -178,19 +194,52 @@ pub mod blocking {
         fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<TaskList>;
     }
 
+    /// Store the given item in a backend
+    pub trait Store<ITEM> {
+        fn create(&self, item: &ITEM) -> TaskResult<ITEM>;
+        fn get(&self, item: &ITEM) -> TaskResult<ITEM>;
+    }
+
+    /// Link given items in a backend
+    pub trait Link<LEFT, RIGHT> {
+        fn create_linked(
+            &self,
+            left: LEFT,
+            right: RIGHT,
+            relationship: LinkType,
+        ) -> TaskResult<RIGHT>;
+        fn get_linked(
+            &self,
+            left: LEFT,
+            relationship: LinkType,
+        ) -> anyhow::Result<impl Iterator<Item = TaskResult<RIGHT>>>;
+    }
+
     #[derive(Clone, Copy)]
     pub struct TestBackend;
 
-    /// Hardcoded cases to unit test the basic `Task` interface
-    impl StorageBackend for TestBackend {
-        fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
+    impl Store<Task> for TestBackend {
+        fn create(&self, task: &Task) -> TaskResult<Task> {
             match task.name {
-                Cow::Borrowed("FAIL") => Err(anyhow!("Taskname: FAIL")),
+                Cow::Borrowed("FAIL") => Err(TaskCreationError::NotFound {
+                    item: Box::new(task.clone()),
+                }),
                 Cow::Borrowed("MISMATCH") => {
                     Ok(Task::new(task.name.clone(), task.description.clone()))
                 }
                 _ => Ok(task.clone()),
             }
+        }
+
+        fn get(&self, item: &Task) -> TaskResult<Task> {
+            todo!()
+        }
+    }
+
+    /// Hardcoded cases to unit test the basic `Task` interface
+    impl StorageBackend for TestBackend {
+        fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
+            Ok(self.create(task)?)
         }
 
         fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList> {
