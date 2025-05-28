@@ -263,7 +263,10 @@ pub mod blocking {
                     name: "Test TaskList 1".into(),
                     id: *id,
                 }),
-                _ => Err(TaskCreationError::NotFound { itemtype: "Tasklist".into(), id: *id }),
+                _ => Err(TaskCreationError::NotFound {
+                    itemtype: "Tasklist".into(),
+                    id: *id,
+                }),
             }
         }
     }

@@ -47,7 +47,8 @@ pub mod blocking {
 
     use super::*;
     use helixflow_core::task::{
-        blocking::{StorageBackend, Store, CRUD}, TaskList
+        TaskList,
+        blocking::{CRUD, StorageBackend, Store},
     };
     use slint::{ModelRc, VecModel};
 

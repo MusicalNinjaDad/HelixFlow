@@ -119,8 +119,22 @@ pub mod blocking {
 
     impl<C: Connection> Store<Task> for SurrealDb<C> {
         fn create(&self, task: &Task) -> TaskResult<Task> {
-            Ok(self.create_task(task)?)
+            dbg!(task);
+            let dbtask: SurrealTask = self
+                .rt
+                .block_on(
+                    self.db
+                        .create("Tasks")
+                        .content(SurrealTask::from(task))
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?
+                .with_context(|| format!("Creating new record for {:#?} in SurrealDb", task))?;
+            let checktask = dbtask.try_into()?;
+            dbg!(&checktask);
+            Ok(checktask)
         }
+
         fn get(&self, id: &Uuid) -> TaskResult<Task> {
             Ok(self.get_task(id)?)
         }
@@ -137,19 +151,7 @@ pub mod blocking {
 
     impl<C: Connection> StorageBackend for SurrealDb<C> {
         fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
-            dbg!(task);
-            let dbtask: SurrealTask = self
-                .rt
-                .block_on(
-                    self.db
-                        .create("Tasks")
-                        .content(SurrealTask::from(task))
-                        .into_future(),
-                )?
-                .with_context(|| format!("Creating new record for {:#?} in SurrealDb", task))?;
-            let checktask = dbtask.try_into()?;
-            dbg!(&checktask);
-            Ok(checktask)
+            todo!("Deprecated")
         }
 
         fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList> {
@@ -176,7 +178,7 @@ pub mod blocking {
             // TODO make this atomic
             dbg!(tasklist);
             let db_tasklist = self.get_tasklist(&tasklist.id)?;
-            let db_task = self.create_task(task)?;
+            let db_task = self.create(task)?;
             let confirmed_link: Vec<Link> = self.rt.block_on(
                 self.db
                     .insert("contains")
@@ -310,7 +312,7 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 1", None);
                 let backend = SurrealDb::new().unwrap();
-                backend.create_task(&new_task).unwrap(); // Unwrap to check we don't get any errors
+                backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
             }
         }
 
@@ -319,7 +321,7 @@ pub mod blocking {
             {
                 let new_task = Task::new("Test Task 2", None);
                 let backend = SurrealDb::new().unwrap();
-                backend.create_task(&new_task).unwrap(); // Unwrap to check we don't get any errors
+                backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
                 let stored_task = backend.get_task(&new_task.id).unwrap();
                 assert_eq!(stored_task, new_task);
             }
@@ -339,9 +341,9 @@ pub mod blocking {
         fn test_get_tasks() {
             let backend = SurrealDb::new().unwrap();
             let task1 = Task::new("Task 1", None);
-            backend.create_task(&task1).unwrap();
+            backend.create(&task1).unwrap();
             let task2 = Task::new("Task 2", None);
-            backend.create_task(&task2).unwrap();
+            backend.create(&task2).unwrap();
             let all_tasks: Vec<Task> = backend
                 .get_all_tasks()
                 .unwrap()
