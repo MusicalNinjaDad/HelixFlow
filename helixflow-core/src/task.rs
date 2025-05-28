@@ -69,9 +69,9 @@ pub enum TaskCreationError {
 
     #[error("task id ({id:?}) is not a valid UUID v7")]
     InvalidID { id: String },
-    // TODO Rename to TaskCRUDError and add "Unknown ID"
-    #[error("404 Not found: {item:#?}")]
-    NotFound { item: Box<dyn HelixFlowItem> },
+
+    #[error("404 No {itemtype} found with id {id}")]
+    NotFound { itemtype: String, id: Uuid },
 }
 
 pub enum LinkType {
@@ -197,7 +197,7 @@ pub mod blocking {
     /// Store the given item in a backend
     pub trait Store<ITEM> {
         fn create(&self, item: &ITEM) -> TaskResult<ITEM>;
-        fn get(&self, item: &ITEM) -> TaskResult<ITEM>;
+        fn get(&self, id: &Uuid) -> TaskResult<ITEM>;
     }
 
     /// Link given items in a backend
@@ -221,9 +221,7 @@ pub mod blocking {
     impl Store<Task> for TestBackend {
         fn create(&self, task: &Task) -> TaskResult<Task> {
             match task.name {
-                Cow::Borrowed("FAIL") => Err(TaskCreationError::NotFound {
-                    item: Box::new(task.clone()),
-                }),
+                Cow::Borrowed("FAIL") => Err(anyhow!("Failed to create task").into()),
                 Cow::Borrowed("MISMATCH") => {
                     Ok(Task::new(task.name.clone(), task.description.clone()))
                 }
@@ -231,8 +229,23 @@ pub mod blocking {
             }
         }
 
-        fn get(&self, item: &Task) -> TaskResult<Task> {
-            todo!()
+        fn get(&self, id: &Uuid) -> TaskResult<Task> {
+            match id.to_string().as_str() {
+                "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
+                    name: "Task 1".into(),
+                    id: *id,
+                    description: None,
+                }),
+                "0196ca5f-d934-7ec8-b042-ae37b94b8432" => Ok(Task {
+                    name: "Task 2".into(),
+                    id: *id,
+                    description: None,
+                }),
+                _ => Err(TaskCreationError::NotFound {
+                    itemtype: "Task".into(),
+                    id: *id,
+                }),
+            }
         }
     }
 
@@ -258,19 +271,7 @@ pub mod blocking {
         }
 
         fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
-            match id.to_string().as_str() {
-                "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
-                    name: "Task 1".into(),
-                    id: *id,
-                    description: None,
-                }),
-                "0196ca5f-d934-7ec8-b042-ae37b94b8432" => Ok(Task {
-                    name: "Task 2".into(),
-                    id: *id,
-                    description: None,
-                }),
-                _ => Err(anyhow!("Unknown task ID: {}", id)),
-            }
+            Ok(self.get(id)?)
         }
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             Ok(vec![
@@ -381,8 +382,8 @@ pub mod blocking {
             let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
             let err = backend.get_task(&id).unwrap_err();
             assert_eq!(
-                format!("{}", err),
-                "Unknown task ID: 0196b4c9-8447-78db-ae8a-be68a8095aa2"
+                format!("{}", &err),
+                "404 No Task found with id 0196b4c9-8447-78db-ae8a-be68a8095aa2"
             );
         }
 
