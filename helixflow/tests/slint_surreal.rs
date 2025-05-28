@@ -8,7 +8,7 @@ use helixflow_slint::{CurrentTask, HelixFlow, task::blocking::create_task, test:
 use helixflow_surreal::blocking::SurrealDb;
 
 #[test]
-fn test_slint_with_surreal() {
+fn test_create_task() {
     prepare_slint!();
 
     let backend = Rc::new(SurrealDb::new().unwrap());
