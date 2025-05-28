@@ -3,7 +3,7 @@
 
 use std::{borrow::Cow, rc::Rc};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use log::debug;
 use surrealdb::{
     Connection, Surreal, Uuid,
@@ -187,26 +187,6 @@ pub mod blocking {
     }
 
     impl<C: Connection> StorageBackend for SurrealDb<C> {
-        fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
-            todo!("Deprecated")
-        }
-
-        fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList> {
-            dbg!(tasklist);
-            let dbtasklist: SurrealTaskList = self
-                .rt
-                .block_on(
-                    self.db
-                        .create("Tasklists")
-                        .content(SurrealTaskList::from(tasklist))
-                        .into_future(),
-                )?
-                .with_context(|| format!("Creating new record for {:#?} in SurrealDb", tasklist))?;
-            let check_tasklist = dbtasklist.try_into()?;
-            dbg!(&check_tasklist);
-            Ok(check_tasklist)
-        }
-
         fn create_task_in_tasklist(
             &self,
             task: &Task,
@@ -227,17 +207,6 @@ pub mod blocking {
             )?;
             dbg!(confirmed_link);
             Ok(db_task)
-        }
-
-        fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
-            let dbtask: Option<SurrealTask> = self
-                .rt
-                .block_on(self.db.select(("Tasks", *id)).into_future())?;
-            if let Some(task) = dbtask {
-                Ok(task.try_into()?)
-            } else {
-                Err(anyhow!("Unknown task ID: {}", id))
-            }
         }
 
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
@@ -267,17 +236,6 @@ pub mod blocking {
                 .unwrap()
                 .into_iter()
                 .map(|task| task.try_into()))
-        }
-
-        fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<helixflow_core::task::TaskList> {
-            let db_tasklist: Option<SurrealTaskList> = self
-                .rt
-                .block_on(self.db.select(("Tasklists", *id)).into_future())?;
-            if let Some(tasklist) = db_tasklist {
-                Ok(tasklist.try_into()?)
-            } else {
-                Err(anyhow!("Unknown tasklist ID: {}", id))
-            }
         }
     }
 

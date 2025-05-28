@@ -167,40 +167,25 @@ pub mod blocking {
 
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
-        /// Create a new task in the backend.
-        ///
-        /// The returned Task should be the actual stored record from the backend - to allow
-        /// validation by `Task::create()`
-        #[deprecated = "Replaced by Store trait"]
-        fn create_task(&self, task: &Task) -> anyhow::Result<Task>;
-
-        /// Create a TaskList in the backend
-        ///
-        /// The returned TaskList should be the actual stored record from the backend - to allow
-        /// validation by `TaskList::create()`
-        #[deprecated = "Replaced by Store trait"]
-        fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList>;
-
         /// Create a task in the backend, linked to a TaskList
         fn create_task_in_tasklist(&self, task: &Task, tasklist: &TaskList)
         -> anyhow::Result<Task>;
-
-        /// Get an existing task from the backend
-        #[deprecated = "Replaced by Store trait"]
-        fn get_task(&self, id: &Uuid) -> anyhow::Result<Task>;
 
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
 
         fn get_tasks_in(&self, id: &Uuid)
         -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
-
-        #[deprecated = "Replaced by Store trait"]
-        fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<TaskList>;
     }
 
-    /// Store the given item in a backend
+    /// Methods to store and retrieve `ITEM` in a backend
     pub trait Store<ITEM> {
+        /// Create a new `ITEM` in the backend.
+        ///
+        /// The returned `ITEM` should be the actual stored record from the backend - to allow
+        /// validation by `CRUD<ITEM>::create()`
         fn create(&self, item: &ITEM) -> TaskResult<ITEM>;
+
+        /// Get an `ITEM` from the backend
         fn get(&self, id: &Uuid) -> TaskResult<ITEM>;
     }
 
@@ -273,14 +258,6 @@ pub mod blocking {
 
     /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend for TestBackend {
-        fn create_task(&self, task: &Task) -> anyhow::Result<Task> {
-            Ok(self.create(task)?)
-        }
-
-        fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList> {
-            todo!();
-        }
-
         fn create_task_in_tasklist(
             &self,
             task: &Task,
@@ -292,9 +269,6 @@ pub mod blocking {
             }
         }
 
-        fn get_task(&self, id: &Uuid) -> anyhow::Result<Task> {
-            Ok(self.get(id)?)
-        }
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             Ok(vec![
                 Ok(Task {
@@ -315,15 +289,6 @@ pub mod blocking {
             id: &Uuid,
         ) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             self.get_all_tasks()
-        }
-        fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<TaskList> {
-            match id.to_string().as_str() {
-                "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(TaskList {
-                    name: "Test TaskList 1".into(),
-                    id: *id,
-                }),
-                _ => Err(anyhow!("Unknown tasklist ID: {}", id)),
-            }
         }
     }
 
