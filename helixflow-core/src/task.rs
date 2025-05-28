@@ -178,6 +178,7 @@ pub mod blocking {
         ///
         /// The returned TaskList should be the actual stored record from the backend - to allow
         /// validation by `TaskList::create()`
+        #[deprecated = "Replaced by Store trait"]
         fn create_tasklist(&self, tasklist: &TaskList) -> anyhow::Result<TaskList>;
 
         /// Create a task in the backend, linked to a TaskList
