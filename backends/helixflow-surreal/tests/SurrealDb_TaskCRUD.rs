@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![feature(assert_matches)]
 //! Test calling Task::CRUD_fn(&SurrealDb) ...
 
 use helixflow_core::task::Task;
@@ -6,11 +7,13 @@ use surrealdb::Uuid;
 
 mod blocking {
 
+    use std::assert_matches::assert_matches;
+
     use super::*;
 
     use assert_unordered::assert_eq_unordered_sort;
     use helixflow_core::task::{
-        TaskList,
+        TaskCreationError, TaskList,
         blocking::{CRUD, LinkFrom},
     };
     use helixflow_surreal::blocking::SurrealDb;
@@ -41,9 +44,10 @@ mod blocking {
             let backend = SurrealDb::new().unwrap();
             let id = Uuid::now_v7();
             let err = Task::get(&backend, &id).unwrap_err();
-            assert_eq!(
-                format!("{}", err),
-                format!("backend error: Unknown task ID: {}", id)
+            assert_matches!(
+                err,
+                TaskCreationError::NotFound { itemtype, id }
+                if itemtype == "Task" && id == id
             );
         }
     }

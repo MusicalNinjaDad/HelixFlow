@@ -122,7 +122,7 @@ pub mod blocking {
 
         /// Get task from `backend` by `id`
         fn get<B: Store<Task>>(backend: &B, id: &Uuid) -> TaskResult<Task> {
-            Ok(backend.get(id)?)
+            backend.get(id)
         }
     }
 

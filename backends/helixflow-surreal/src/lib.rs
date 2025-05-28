@@ -1,3 +1,4 @@
+#![feature(assert_matches)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use std::{borrow::Cow, rc::Rc};
@@ -136,16 +137,52 @@ pub mod blocking {
         }
 
         fn get(&self, id: &Uuid) -> TaskResult<Task> {
-            Ok(self.get_task(id)?)
+            let dbtask: Option<SurrealTask> = self
+                .rt
+                .block_on(self.db.select(("Tasks", *id)).into_future())
+                .map_err(anyhow::Error::from)?;
+            if let Some(task) = dbtask {
+                Ok(task.try_into()?)
+            } else {
+                Err(TaskCreationError::NotFound {
+                    itemtype: "Task".into(),
+                    id: *id,
+                })
+            }
         }
     }
 
     impl<C: Connection> Store<TaskList> for SurrealDb<C> {
         fn create(&self, tasklist: &TaskList) -> TaskResult<TaskList> {
-            Ok(self.create_tasklist(tasklist)?)
+            dbg!(tasklist);
+            let dbtasklist: SurrealTaskList = self
+                .rt
+                .block_on(
+                    self.db
+                        .create("Tasklists")
+                        .content(SurrealTaskList::from(tasklist))
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?
+                .with_context(|| format!("Creating new record for {:#?} in SurrealDb", tasklist))?;
+            let check_tasklist = dbtasklist.try_into()?;
+            dbg!(&check_tasklist);
+            Ok(check_tasklist)
         }
+
         fn get(&self, id: &Uuid) -> TaskResult<TaskList> {
-            Ok(self.get_tasklist(id)?)
+            let db_tasklist: Option<SurrealTaskList> = self
+                .rt
+                .block_on(self.db.select(("Tasklists", *id)).into_future())
+                .map_err(anyhow::Error::from)?;
+            if let Some(tasklist) = db_tasklist {
+                Ok(tasklist.try_into()?)
+            } else {
+                Err(TaskCreationError::NotFound {
+                    itemtype: "TaskList".into(),
+                    id: *id,
+                })
+            }
         }
     }
 
@@ -177,7 +214,7 @@ pub mod blocking {
         ) -> anyhow::Result<Task> {
             // TODO make this atomic
             dbg!(tasklist);
-            let db_tasklist = self.get_tasklist(&tasklist.id)?;
+            let db_tasklist = self.get(&tasklist.id)?;
             let db_task = self.create(task)?;
             let confirmed_link: Vec<Link> = self.rt.block_on(
                 self.db
@@ -303,6 +340,8 @@ pub mod blocking {
     #[cfg(test)]
     mod tests {
 
+        use std::assert_matches::assert_matches;
+
         use super::*;
 
         wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
@@ -322,7 +361,7 @@ pub mod blocking {
                 let new_task = Task::new("Test Task 2", None);
                 let backend = SurrealDb::new().unwrap();
                 backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-                let stored_task = backend.get_task(&new_task.id).unwrap();
+                let stored_task: Task = backend.get(&new_task.id).unwrap();
                 assert_eq!(stored_task, new_task);
             }
         }
@@ -332,8 +371,13 @@ pub mod blocking {
             {
                 let backend = SurrealDb::new().unwrap();
                 let id = Uuid::now_v7();
-                let err = backend.get_task(&id).unwrap_err();
-                assert_eq!(format!("{}", err), format!("Unknown task ID: {}", id));
+                let res: TaskResult<Task> = backend.get(&id);
+                let err = res.unwrap_err();
+                assert_matches!(
+                    err,
+                    TaskCreationError::NotFound { itemtype, id }
+                    if itemtype == "Task" && id == id
+                );
             }
         }
 
