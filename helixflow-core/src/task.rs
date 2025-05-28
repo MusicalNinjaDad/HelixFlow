@@ -61,10 +61,10 @@ pub enum TaskCreationError {
     #[error("backend error: {0}")]
     BackendError(#[from] anyhow::Error),
 
-    #[error("created task does not match expectations: expected {expected:?}, got {actual:?}")]
+    #[error("created item does not match expectations: expected {expected:?}, got {actual:?}")]
     Mismatch {
-        expected: Box<Task>,
-        actual: Box<Task>,
+        expected: Box<dyn HelixFlowItem>,
+        actual: Box<dyn HelixFlowItem>,
     },
 
     #[error("task id ({id:?}) is not a valid UUID v7")]
@@ -83,7 +83,8 @@ pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
 /// Marker trait for our data items
 pub trait HelixFlowItem
 where
-    Self: std::fmt::Debug + Send + Sync,
+    // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
+    Self: std::fmt::Debug + Send + Sync + 'static,
 {
 }
 
@@ -106,22 +107,25 @@ pub mod blocking {
         fn create_linked<B: StorageBackend>(&self, backend: &B, left: &LEFT) -> TaskResult<()>;
     }
 
-    impl CRUD for Task {
-        /// Create this task in a given storage backend.
-        fn create<B: Store<Task>>(&self, backend: &B) -> TaskResult<()> {
-            let created_task = backend.create(self)?;
-            if &created_task == self {
+    impl<ITEM> CRUD for ITEM
+    where
+        ITEM: HelixFlowItem + PartialEq + Clone,
+    {
+        /// Create this item in a given storage backend.
+        fn create<B: Store<ITEM>>(&self, backend: &B) -> TaskResult<()> {
+            let created_item = backend.create(self)?;
+            if &created_item == self {
                 Ok(())
             } else {
                 Err(TaskCreationError::Mismatch {
                     expected: Box::new(self.clone()),
-                    actual: Box::new(created_task),
+                    actual: Box::new(created_item),
                 })
             }
         }
 
-        /// Get task from `backend` by `id`
-        fn get<B: Store<Task>>(backend: &B, id: &Uuid) -> TaskResult<Task> {
+        /// Get item from `backend` by `id`
+        fn get<B: Store<ITEM>>(backend: &B, id: &Uuid) -> TaskResult<ITEM> {
             backend.get(id)
         }
     }
@@ -151,17 +155,6 @@ pub mod blocking {
             backend: &B,
         ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
             Ok(backend.get_tasks_in(&self.id)?)
-        }
-    }
-
-    impl CRUD for TaskList {
-        fn create<B: Store<TaskList>>(&self, backend: &B) -> TaskResult<()> {
-            let created_tasklist = backend.create(self)?;
-            Ok(())
-        }
-
-        fn get<B: Store<TaskList>>(backend: &B, id: &Uuid) -> TaskResult<TaskList> {
-            backend.get(id)
         }
     }
 
