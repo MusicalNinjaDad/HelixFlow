@@ -118,20 +118,20 @@ pub mod blocking {
     }
 
     impl<C: Connection> Store<Task> for SurrealDb<C> {
-        fn create(&self, item: &Task) -> TaskResult<Task> {
-            todo!()
+        fn create(&self, task: &Task) -> TaskResult<Task> {
+            Ok(self.create_task(task)?)
         }
         fn get(&self, id: &Uuid) -> TaskResult<Task> {
-            todo!()
+            Ok(self.get_task(id)?)
         }
     }
 
     impl<C: Connection> Store<TaskList> for SurrealDb<C> {
-        fn create(&self, item: &TaskList) -> TaskResult<TaskList> {
-            todo!()
+        fn create(&self, tasklist: &TaskList) -> TaskResult<TaskList> {
+            Ok(self.create_tasklist(tasklist)?)
         }
         fn get(&self, id: &Uuid) -> TaskResult<TaskList> {
-            todo!()
+            Ok(self.get_tasklist(id)?)
         }
     }
 
