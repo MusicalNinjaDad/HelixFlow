@@ -396,6 +396,10 @@ pub mod blocking {
                 format!("{}", &err),
                 "404 No Task found with id 0196b4c9-8447-78db-ae8a-be68a8095aa2"
             );
+            assert_matches!(
+                err,
+                TaskCreationError::NotFound { itemtype, id }
+                if itemtype == "Task" && id == uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2"));
         }
 
         #[test]
