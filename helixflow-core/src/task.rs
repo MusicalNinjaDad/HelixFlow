@@ -193,6 +193,7 @@ pub mod blocking {
         fn get_tasks_in(&self, id: &Uuid)
         -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
 
+        #[deprecated = "Replaced by Store trait"]
         fn get_tasklist(&self, id: &Uuid) -> anyhow::Result<TaskList>;
     }
 
@@ -256,7 +257,13 @@ pub mod blocking {
             todo!()
         }
         fn get(&self, id: &Uuid) -> TaskResult<TaskList> {
-            todo!()
+            match id.to_string().as_str() {
+                "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(TaskList {
+                    name: "Test TaskList 1".into(),
+                    id: *id,
+                }),
+                _ => Err(TaskCreationError::NotFound { itemtype: "Tasklist".into(), id: *id }),
+            }
         }
     }
 
