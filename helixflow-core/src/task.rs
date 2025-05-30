@@ -53,6 +53,16 @@ impl TaskList {
             id: Uuid::now_v7(),
         }
     }
+
+    /// Create a `Contains` relationship where self -> contains -> Task.
+    /// The Tasklist & Task must share the same lifetime, which will be inherited by the `Contains`.
+    pub fn contains<'items>(&'items self, task: &'items Task) -> Contains<'items, Self, Task> {
+        Contains {
+            left: &self,
+            sortorder: "a".into(),
+            right: &task,
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -74,9 +84,12 @@ pub enum TaskCreationError {
     NotFound { itemtype: String, id: Uuid },
 }
 
-pub enum LinkType {
-    Contains,
-}
+pub struct Contains<'items, LEFT, RIGHT>
+    {
+        left: &'items LEFT,
+        sortorder: String,
+        right: &'items RIGHT,
+    }
 
 pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
 
@@ -102,9 +115,11 @@ pub mod blocking {
         fn get<B: Store<Self>>(backend: &B, id: &Uuid) -> TaskResult<Self>;
     }
 
-    /// `impl LinkFrom<LEFT> for RIGHT` gives `Left -> links_to -> Right`
-    pub trait LinkFrom<LEFT> {
-        fn create_linked<B: StorageBackend>(&self, backend: &B, left: &LEFT) -> TaskResult<()>;
+    /// `impl Link<REL> for LEFT` gives `Left Rel:(-> link_type -> Right)`
+    pub trait Link
+    where Self: Sized,
+    {
+        fn create_linked<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
     }
 
     impl<ITEM> CRUD for ITEM
@@ -130,13 +145,9 @@ pub mod blocking {
         }
     }
 
-    impl LinkFrom<TaskList> for Task {
-        fn create_linked<B: StorageBackend>(
-            &self,
-            backend: &B,
-            tasklist: &TaskList,
-        ) -> TaskResult<()> {
-            let created_task = backend.create_task_in_tasklist(self, tasklist)?;
+    impl<'items> Link for Contains<'items, &'items TaskList, &'items Task> {
+        fn create_linked<B: Relate<Contains<'items, &'items TaskList, &'items Task>>>(&self, backend: &B) -> TaskResult<()> {
+            let created_task = backend.create_linked(self)?;
             Ok(())
         }
     }
@@ -170,6 +181,14 @@ pub mod blocking {
         -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
     }
 
+    /// Methods to relate items in a backend
+    pub trait Relate<REL: Link> {
+        /// Create and link the related item
+        fn create_linked(&self, link: &REL) -> TaskResult<REL> {
+            todo!()
+        }
+    }
+
     /// Methods to store and retrieve `ITEM` in a backend
     pub trait Store<ITEM> {
         /// Create a new `ITEM` in the backend.
@@ -180,21 +199,6 @@ pub mod blocking {
 
         /// Get an `ITEM` from the backend
         fn get(&self, id: &Uuid) -> TaskResult<ITEM>;
-    }
-
-    /// Link given items in a backend
-    pub trait Link<LEFT, RIGHT> {
-        fn create_linked(
-            &self,
-            left: LEFT,
-            right: RIGHT,
-            relationship: LinkType,
-        ) -> TaskResult<RIGHT>;
-        fn get_linked(
-            &self,
-            left: LEFT,
-            relationship: LinkType,
-        ) -> anyhow::Result<impl Iterator<Item = TaskResult<RIGHT>>>;
     }
 
     #[derive(Clone, Copy)]
