@@ -213,6 +213,7 @@ pub mod blocking {
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
         /// Create a task in the backend, linked to a TaskList
+        #[deprecated = "Replaced by Link & Relate traits"]
         fn create_task_in_tasklist(&self, task: &Task, tasklist: &TaskList)
         -> anyhow::Result<Task>;
 
