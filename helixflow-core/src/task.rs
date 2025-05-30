@@ -85,7 +85,7 @@ pub struct Contains<LEFT, RIGHT> {
 
 impl TaskList {
     /// Create a `Contains` relationship where Tasklist -> contains -> Task.
-    /// The Tasklist & Task must share the same lifetime, which will be inherited by the `Contains`.
+    #[deprecated = "replaced by Linkable::link"]
     pub fn contains(&self, task: &Task) -> Contains<Self, Task> {
         Contains {
             left: self.clone(),
@@ -171,6 +171,8 @@ pub mod blocking {
     }
 
     pub trait Linkable<REL: Link> {
+        type Right;
+        fn link(&self, right: &Self::Right) -> REL;
         fn get_linked_items<B: Relate<REL, Left = Self>>(
             &self,
             backend: &B,
@@ -203,6 +205,14 @@ pub mod blocking {
     }
 
     impl Linkable<Contains<TaskList, Task>> for TaskList {
+        type Right = Task;
+        fn link(&self, task: &Task) -> Contains<TaskList, Task> {
+            Contains {
+                left: self.clone(),
+                sortorder: "a".into(),
+                right: task.clone(),
+            }
+        }
         fn get_linked_items<B>(
             &self,
             backend: &B,
@@ -513,7 +523,7 @@ pub mod blocking {
                 id: uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"),
             };
             let task3 = Task::new("Test task 3", None);
-            let relationship: Contains<TaskList, Task> = backlog.contains(&task3);
+            let relationship: Contains<TaskList, Task> = backlog.link(&task3);
             relationship.create_linked_item(&backend).unwrap();
         }
 
@@ -526,7 +536,7 @@ pub mod blocking {
                 id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
             };
             let task3 = Task::new("Test task 3", None);
-            let relationship: Contains<TaskList, Task> = backlog.contains(&task3);
+            let relationship: Contains<TaskList, Task> = backlog.link(&task3);
             let mismatch = relationship.create_linked_item(&backend).unwrap_err();
             assert_matches!(
                 mismatch,
