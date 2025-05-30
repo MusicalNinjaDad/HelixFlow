@@ -5,6 +5,18 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use uuid::Uuid;
 use uuid::uuid;
+
+/// Marker trait for our data items
+pub trait HelixFlowItem
+where
+    // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
+    Self: std::fmt::Debug + Send + Sync + 'static,
+{
+}
+
+impl HelixFlowItem for Task {}
+impl HelixFlowItem for TaskList {}
+
 /// A Task
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Task {
@@ -53,8 +65,16 @@ impl TaskList {
             id: Uuid::now_v7(),
         }
     }
+}
 
-    /// Create a `Contains` relationship where self -> contains -> Task.
+pub struct Contains<'items, LEFT, RIGHT> {
+    left: &'items LEFT,
+    sortorder: String,
+    right: &'items RIGHT,
+}
+
+impl TaskList {
+    /// Create a `Contains` relationship where Tasklist -> contains -> Task.
     /// The Tasklist & Task must share the same lifetime, which will be inherited by the `Contains`.
     pub fn contains<'items>(&'items self, task: &'items Task) -> Contains<'items, Self, Task> {
         Contains {
@@ -84,25 +104,7 @@ pub enum TaskCreationError {
     NotFound { itemtype: String, id: Uuid },
 }
 
-pub struct Contains<'items, LEFT, RIGHT>
-    {
-        left: &'items LEFT,
-        sortorder: String,
-        right: &'items RIGHT,
-    }
-
 pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
-
-/// Marker trait for our data items
-pub trait HelixFlowItem
-where
-    // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
-    Self: std::fmt::Debug + Send + Sync + 'static,
-{
-}
-
-impl HelixFlowItem for Task {}
-impl HelixFlowItem for TaskList {}
 
 pub mod blocking {
     use super::*;
@@ -115,11 +117,16 @@ pub mod blocking {
         fn get<B: Store<Self>>(backend: &B, id: &Uuid) -> TaskResult<Self>;
     }
 
-    /// `impl Link<REL> for LEFT` gives `Left Rel:(-> link_type -> Right)`
-    pub trait Link
-    where Self: Sized,
-    {
-        fn create_linked<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
+    /// Methods to store and retrieve `ITEM` in a backend
+    pub trait Store<ITEM> {
+        /// Create a new `ITEM` in the backend.
+        ///
+        /// The returned `ITEM` should be the actual stored record from the backend - to allow
+        /// validation by `CRUD<ITEM>::create()`
+        fn create(&self, item: &ITEM) -> TaskResult<ITEM>;
+
+        /// Get an `ITEM` from the backend
+        fn get(&self, id: &Uuid) -> TaskResult<ITEM>;
     }
 
     impl<ITEM> CRUD for ITEM
@@ -145,8 +152,27 @@ pub mod blocking {
         }
     }
 
+    /// `impl Link<REL> for LEFT` gives `Left Rel:(-> link_type -> Right)`
+    pub trait Link
+    where
+        Self: Sized,
+    {
+        fn create_linked<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
+    }
+
+    /// Methods to relate items in a backend
+    pub trait Relate<REL: Link> {
+        /// Create and link the related item
+        fn create_linked(&self, link: &REL) -> TaskResult<REL> {
+            todo!()
+        }
+    }
+
     impl<'items> Link for Contains<'items, &'items TaskList, &'items Task> {
-        fn create_linked<B: Relate<Contains<'items, &'items TaskList, &'items Task>>>(&self, backend: &B) -> TaskResult<()> {
+        fn create_linked<B: Relate<Contains<'items, &'items TaskList, &'items Task>>>(
+            &self,
+            backend: &B,
+        ) -> TaskResult<()> {
             let created_task = backend.create_linked(self)?;
             Ok(())
         }
@@ -179,26 +205,6 @@ pub mod blocking {
 
         fn get_tasks_in(&self, id: &Uuid)
         -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
-    }
-
-    /// Methods to relate items in a backend
-    pub trait Relate<REL: Link> {
-        /// Create and link the related item
-        fn create_linked(&self, link: &REL) -> TaskResult<REL> {
-            todo!()
-        }
-    }
-
-    /// Methods to store and retrieve `ITEM` in a backend
-    pub trait Store<ITEM> {
-        /// Create a new `ITEM` in the backend.
-        ///
-        /// The returned `ITEM` should be the actual stored record from the backend - to allow
-        /// validation by `CRUD<ITEM>::create()`
-        fn create(&self, item: &ITEM) -> TaskResult<ITEM>;
-
-        /// Get an `ITEM` from the backend
-        fn get(&self, id: &Uuid) -> TaskResult<ITEM>;
     }
 
     #[derive(Clone, Copy)]
