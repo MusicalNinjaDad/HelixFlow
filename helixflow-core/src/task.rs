@@ -168,13 +168,20 @@ pub mod blocking {
         }
     }
 
-    impl<'items> Link for Contains<'items, &'items TaskList, &'items Task> {
-        fn create_linked<B: Relate<Contains<'items, &'items TaskList, &'items Task>>>(
+    impl<'items> Link for Contains<'items, TaskList, Task> {
+        fn create_linked<B: Relate<Contains<'items, TaskList, Task>>>(
             &self,
             backend: &B,
         ) -> TaskResult<()> {
-            let created_task = backend.create_linked(self)?;
-            Ok(())
+            let created = backend.create_linked(self)?;
+            if created.right == self.right {
+                Ok(())
+            } else {
+                Err(TaskCreationError::Mismatch {
+                    expected: Box::new(self.right.clone()),
+                    actual: Box::new(created.right.clone()),
+                })
+            }
         }
     }
 
@@ -256,6 +263,15 @@ pub mod blocking {
                     id: *id,
                 }),
             }
+        }
+    }
+
+    impl<'items> Relate<Contains<'items, TaskList, Task>> for TestBackend {
+        fn create_linked(
+            &self,
+            link: &Contains<'items, TaskList, Task>,
+        ) -> TaskResult<Contains<'items, TaskList, Task>> {
+            todo!()
         }
     }
 
@@ -433,14 +449,15 @@ pub mod blocking {
 
         #[test]
         fn create_task_in_tasklist() {
+            use crate::task::{Contains, blocking::Link};
             let backend = TestBackend;
             let backlog = TaskList {
                 name: "Backlog".into(),
                 id: uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"),
             };
             let task3 = Task::new("Test task 3", None);
-            let new_task = backend.create_task_in_tasklist(&task3, &backlog).unwrap();
-            assert_eq!(new_task, task3);
+            let relationship: Contains<'_, TaskList, Task> = backlog.contains(&task3);
+            relationship.create_linked(&backend).unwrap();
         }
     }
 }
