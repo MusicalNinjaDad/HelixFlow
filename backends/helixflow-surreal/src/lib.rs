@@ -222,28 +222,6 @@ pub mod blocking {
     }
 
     impl<C: Connection> StorageBackend for SurrealDb<C> {
-        fn create_task_in_tasklist(
-            &self,
-            task: &Task,
-            tasklist: &TaskList,
-        ) -> anyhow::Result<Task> {
-            // TODO make this atomic
-            dbg!(tasklist);
-            let db_tasklist = self.get(&tasklist.id)?;
-            let db_task = self.create(task)?;
-            let confirmed_link: Vec<Link> = self.rt.block_on(
-                self.db
-                    .insert("contains")
-                    .relation(Link {
-                        r#in: SurrealTaskList::from(&db_tasklist).id,
-                        out: SurrealTask::from(&db_task).id,
-                    })
-                    .into_future(),
-            )?;
-            dbg!(confirmed_link);
-            Ok(db_task)
-        }
-
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             let tasks: Vec<SurrealTask> =
                 self.rt.block_on(self.db.select("Tasks").into_future())?;

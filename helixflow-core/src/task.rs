@@ -212,11 +212,6 @@ pub mod blocking {
 
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
-        /// Create a task in the backend, linked to a TaskList
-        #[deprecated = "Replaced by Link & Relate traits"]
-        fn create_task_in_tasklist(&self, task: &Task, tasklist: &TaskList)
-        -> anyhow::Result<Task>;
-
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
 
         fn get_tasks_in(&self, id: &Uuid)
@@ -301,17 +296,6 @@ pub mod blocking {
 
     /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend for TestBackend {
-        fn create_task_in_tasklist(
-            &self,
-            task: &Task,
-            tasklist: &TaskList,
-        ) -> anyhow::Result<Task> {
-            match tasklist.id.to_string().as_str() {
-                "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(task.clone()),
-                _ => Err(anyhow!("Unknown tasklist ID: {}", tasklist.id)),
-            }
-        }
-
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
             Ok(vec![
                 Ok(Task {

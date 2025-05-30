@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use helixflow_core::task::blocking::LinkFrom;
+use helixflow_core::task::blocking::Link;
 use helixflow_core::task::{Task, TaskList, blocking::CRUD};
 use helixflow_slint::SlintTask;
 use slint::platform::PointerEventButton;
@@ -78,7 +78,10 @@ fn add_tasks_to_backlog() {
         let taskname: String = slinttask.name.into();
         let task = Task::new(taskname, None);
         let backend = be.upgrade().unwrap();
-        task.create_linked(backend.as_ref(), &backlog).unwrap();
+        backlog
+            .contains(&task)
+            .create_linked_item(backend.as_ref())
+            .unwrap();
         let backlog_entries: VecModel<SlintTask> = backlog
             .tasks(backend.as_ref())
             .unwrap()
