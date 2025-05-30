@@ -271,7 +271,11 @@ pub mod blocking {
             &self,
             link: &Contains<'items, TaskList, Task>,
         ) -> TaskResult<Contains<'items, TaskList, Task>> {
-            todo!()
+            Ok(Contains{
+                left: &link.left.clone(),
+                sortorder: link.sortorder.clone(),
+                right: &link.right.clone()
+            })
         }
     }
 
