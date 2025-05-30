@@ -170,10 +170,19 @@ pub mod blocking {
         fn create_linked_item<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
     }
 
+    pub trait Linkable<REL: Link> {
+        fn get_linked_items<B: Relate<REL, Left = Self>>(
+            &self,
+            backend: &B,
+        ) -> TaskResult<impl Iterator<Item = REL>>;
+    }
+
     /// Methods to relate items in a backend
     pub trait Relate<REL: Link> {
+        type Left;
         /// Create and link the related item
         fn create_linked_item(&self, link: &REL) -> TaskResult<REL>;
+        fn get_linked_items(&self, left: &Self::Left) -> TaskResult<impl Iterator<Item = REL>>;
     }
 
     impl Link for Contains<TaskList, Task> {
@@ -190,6 +199,18 @@ pub mod blocking {
                     actual: Box::new(created.right.clone()),
                 })
             }
+        }
+    }
+
+    impl Linkable<Contains<TaskList, Task>> for TaskList {
+        fn get_linked_items<B>(
+            &self,
+            backend: &B,
+        ) -> TaskResult<impl Iterator<Item = Contains<TaskList, Task>>>
+        where
+            B: Relate<Contains<TaskList, Task>, Left = TaskList>,
+        {
+            backend.get_linked_items(self)
         }
     }
 
@@ -271,6 +292,7 @@ pub mod blocking {
     }
 
     impl Relate<Contains<TaskList, Task>> for TestBackend {
+        type Left = TaskList;
         fn create_linked_item(
             &self,
             link: &Contains<TaskList, Task>,
@@ -289,6 +311,32 @@ pub mod blocking {
                 _ => Err(TaskCreationError::NotFound {
                     itemtype: "Tasklist".into(),
                     id: link.left.id,
+                }),
+            }
+        }
+        fn get_linked_items(
+            &self,
+            left: &Self::Left,
+        ) -> TaskResult<impl Iterator<Item = Contains<TaskList, Task>>> {
+            match left.id.to_string().as_str() {
+                "0196fe23-7c01-7d6b-9e09-5968eb370549" => {
+                    let tasks = vec![
+                        Task {
+                            name: "Task 1".into(),
+                            id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+                            description: None,
+                        },
+                        Task {
+                            name: "Task 2".into(),
+                            id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                            description: None,
+                        },
+                    ];
+                    Ok(tasks.into_iter().map(|task| left.contains(&task)))
+                }
+                _ => Err(TaskCreationError::NotFound {
+                    itemtype: "Tasklist".into(),
+                    id: left.id,
                 }),
             }
         }
@@ -445,11 +493,12 @@ pub mod blocking {
                 id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
                 description: None,
             };
-            let tasks: Vec<TaskResult<Task>> = backlog.tasks(&backend).unwrap().collect();
+            let tasks: Vec<Contains<TaskList, Task>> =
+                backlog.get_linked_items(&backend).unwrap().collect();
             assert_eq!(
                 tasks
                     .into_iter()
-                    .map(|task| task.unwrap())
+                    .map(|link| link.right)
                     .collect::<Vec<Task>>(),
                 vec![task1, task2]
             );

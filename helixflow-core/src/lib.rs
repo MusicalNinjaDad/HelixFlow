@@ -3,5 +3,6 @@
 
 #![feature(assert_matches)]
 #![feature(cfg_boolean_literals)]
+#![feature(associated_type_defaults)]
 
 pub mod task;
