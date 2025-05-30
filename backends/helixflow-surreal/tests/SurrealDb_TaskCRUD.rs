@@ -14,7 +14,7 @@ mod blocking {
     use assert_unordered::assert_eq_unordered_sort;
     use helixflow_core::task::{
         TaskCreationError, TaskList,
-        blocking::{CRUD, LinkFrom},
+        blocking::{CRUD, Link},
     };
     use helixflow_surreal::blocking::SurrealDb;
 
@@ -67,7 +67,10 @@ mod blocking {
         let tasklist = TaskList::new("Test tasklist");
         tasklist.create(&backend).unwrap();
         let task = Task::new("Test Task 2", None);
-        task.create_linked(&backend, &tasklist).unwrap();
+        tasklist
+            .contains(&task)
+            .create_linked_item(&backend)
+            .unwrap();
         let tasks: Vec<Task> = tasklist
             .tasks(&backend)
             .unwrap()
@@ -82,9 +85,15 @@ mod blocking {
         let tasklist = TaskList::new("Test tasklist");
         tasklist.create(&backend).unwrap();
         let task2 = Task::new("Test Task 2", None);
-        task2.create_linked(&backend, &tasklist).unwrap();
+        tasklist
+            .contains(&task2)
+            .create_linked_item(&backend)
+            .unwrap();
         let task3 = Task::new("Test Task 3", None);
-        task3.create_linked(&backend, &tasklist).unwrap();
+        tasklist
+            .contains(&task3)
+            .create_linked_item(&backend)
+            .unwrap();
         let tasks: Vec<Task> = tasklist
             .tasks(&backend)
             .unwrap()

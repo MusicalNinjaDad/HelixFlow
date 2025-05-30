@@ -78,9 +78,9 @@ impl TaskList {
 }
 
 pub struct Contains<LEFT, RIGHT> {
-    left: LEFT,
-    sortorder: String,
-    right: RIGHT,
+    pub left: LEFT,
+    pub sortorder: String,
+    pub right: RIGHT,
 }
 
 impl TaskList {

@@ -100,7 +100,10 @@ struct Link {
 pub mod blocking {
 
     use super::*;
-    use helixflow_core::task::blocking::{StorageBackend, Store};
+    use helixflow_core::task::{
+        Contains,
+        blocking::{Relate, StorageBackend, Store},
+    };
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
     /// This requires some form of instantiation function, the exact specification of which will depend
@@ -183,6 +186,38 @@ pub mod blocking {
                     id: *id,
                 })
             }
+        }
+    }
+
+    impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
+        fn create_linked_item(
+            &self,
+            link: &Contains<TaskList, Task>,
+        ) -> TaskResult<Contains<TaskList, Task>> {
+            // TODO make this atomic
+            let tasklist = &link.left;
+            let task = &link.right;
+            dbg!(tasklist);
+            let db_tasklist = self.get(&tasklist.id)?;
+            let db_task = self.create(task)?;
+            let confirmed_link: Vec<Link> = self
+                .rt
+                .block_on(
+                    self.db
+                        .insert("contains")
+                        .relation(Link {
+                            r#in: SurrealTaskList::from(&db_tasklist).id,
+                            out: SurrealTask::from(&db_task).id,
+                        })
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?;
+            dbg!(confirmed_link);
+            Ok(Contains {
+                left: db_tasklist,
+                sortorder: "a".into(),
+                right: db_task,
+            })
         }
     }
 
