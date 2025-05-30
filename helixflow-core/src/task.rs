@@ -2,6 +2,7 @@
 
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
+use std::any::Any;
 use std::borrow::Cow;
 use uuid::Uuid;
 use uuid::uuid;
@@ -10,12 +11,21 @@ use uuid::uuid;
 pub trait HelixFlowItem
 where
     // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
-    Self: std::fmt::Debug + Send + Sync + 'static,
+    Self: std::fmt::Debug + Send + Sync + 'static + Any,
 {
+    fn as_any(&self) -> &dyn Any;
 }
 
-impl HelixFlowItem for Task {}
-impl HelixFlowItem for TaskList {}
+impl HelixFlowItem for Task {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+impl HelixFlowItem for TaskList {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
 
 /// A Task
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -67,20 +77,20 @@ impl TaskList {
     }
 }
 
-pub struct Contains<'items, LEFT, RIGHT> {
-    left: &'items LEFT,
+pub struct Contains<LEFT, RIGHT> {
+    left: LEFT,
     sortorder: String,
-    right: &'items RIGHT,
+    right: RIGHT,
 }
 
 impl TaskList {
     /// Create a `Contains` relationship where Tasklist -> contains -> Task.
     /// The Tasklist & Task must share the same lifetime, which will be inherited by the `Contains`.
-    pub fn contains<'items>(&'items self, task: &'items Task) -> Contains<'items, Self, Task> {
+    pub fn contains(&self, task: &Task) -> Contains<Self, Task> {
         Contains {
-            left: self,
+            left: self.clone(),
             sortorder: "a".into(),
-            right: task,
+            right: task.clone(),
         }
     }
 }
@@ -163,13 +173,11 @@ pub mod blocking {
     /// Methods to relate items in a backend
     pub trait Relate<REL: Link> {
         /// Create and link the related item
-        fn create_linked(&self, link: &REL) -> TaskResult<REL> {
-            todo!()
-        }
+        fn create_linked(&self, link: &REL) -> TaskResult<REL>;
     }
 
-    impl<'items> Link for Contains<'items, TaskList, Task> {
-        fn create_linked<B: Relate<Contains<'items, TaskList, Task>>>(
+    impl Link for Contains<TaskList, Task> {
+        fn create_linked<B: Relate<Contains<TaskList, Task>>>(
             &self,
             backend: &B,
         ) -> TaskResult<()> {
@@ -266,16 +274,27 @@ pub mod blocking {
         }
     }
 
-    impl<'items> Relate<Contains<'items, TaskList, Task>> for TestBackend {
+    impl Relate<Contains<TaskList, Task>> for TestBackend {
         fn create_linked(
             &self,
-            link: &Contains<'items, TaskList, Task>,
-        ) -> TaskResult<Contains<'items, TaskList, Task>> {
-            Ok(Contains{
-                left: &link.left.clone(),
-                sortorder: link.sortorder.clone(),
-                right: &link.right.clone()
-            })
+            link: &Contains<TaskList, Task>,
+        ) -> TaskResult<Contains<TaskList, Task>> {
+            match link.left.id.to_string().as_str() {
+                "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(Contains {
+                    left: link.left.clone(),
+                    sortorder: link.sortorder.clone(),
+                    right: link.right.clone(),
+                }),
+                "0196ca5f-d934-7ec8-b042-ae37b94b8432" => Ok(Contains {
+                    left: link.left.clone(),
+                    sortorder: link.sortorder.clone(),
+                    right: Task::new("Mismatch", None),
+                }),
+                _ => Err(TaskCreationError::NotFound {
+                    itemtype: "Tasklist".into(),
+                    id: link.left.id,
+                }),
+            }
         }
     }
 
@@ -460,8 +479,26 @@ pub mod blocking {
                 id: uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"),
             };
             let task3 = Task::new("Test task 3", None);
-            let relationship: Contains<'_, TaskList, Task> = backlog.contains(&task3);
+            let relationship: Contains<TaskList, Task> = backlog.contains(&task3);
             relationship.create_linked(&backend).unwrap();
+        }
+
+        #[test]
+        fn create_task_in_tasklist_mismatch() {
+            use crate::task::{Contains, blocking::Link};
+            let backend = TestBackend;
+            let backlog = TaskList {
+                name: "Backlog".into(),
+                id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+            };
+            let task3 = Task::new("Test task 3", None);
+            let relationship: Contains<TaskList, Task> = backlog.contains(&task3);
+            let mismatch = relationship.create_linked(&backend).unwrap_err();
+            assert_matches!(
+                mismatch,
+                TaskCreationError::Mismatch { expected, actual: _ }
+                if expected.as_ref().as_any().downcast_ref::<Task>() == Some(&task3)
+            )
         }
     }
 }
