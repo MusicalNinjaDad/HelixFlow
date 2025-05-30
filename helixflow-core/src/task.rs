@@ -167,21 +167,21 @@ pub mod blocking {
     where
         Self: Sized,
     {
-        fn create_linked<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
+        fn create_linked_item<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
     }
 
     /// Methods to relate items in a backend
     pub trait Relate<REL: Link> {
         /// Create and link the related item
-        fn create_linked(&self, link: &REL) -> TaskResult<REL>;
+        fn create_linked_item(&self, link: &REL) -> TaskResult<REL>;
     }
 
     impl Link for Contains<TaskList, Task> {
-        fn create_linked<B: Relate<Contains<TaskList, Task>>>(
+        fn create_linked_item<B: Relate<Contains<TaskList, Task>>>(
             &self,
             backend: &B,
         ) -> TaskResult<()> {
-            let created = backend.create_linked(self)?;
+            let created = backend.create_linked_item(self)?;
             if created.right == self.right {
                 Ok(())
             } else {
@@ -276,7 +276,7 @@ pub mod blocking {
     }
 
     impl Relate<Contains<TaskList, Task>> for TestBackend {
-        fn create_linked(
+        fn create_linked_item(
             &self,
             link: &Contains<TaskList, Task>,
         ) -> TaskResult<Contains<TaskList, Task>> {
@@ -481,7 +481,7 @@ pub mod blocking {
             };
             let task3 = Task::new("Test task 3", None);
             let relationship: Contains<TaskList, Task> = backlog.contains(&task3);
-            relationship.create_linked(&backend).unwrap();
+            relationship.create_linked_item(&backend).unwrap();
         }
 
         #[test]
@@ -494,7 +494,7 @@ pub mod blocking {
             };
             let task3 = Task::new("Test task 3", None);
             let relationship: Contains<TaskList, Task> = backlog.contains(&task3);
-            let mismatch = relationship.create_linked(&backend).unwrap_err();
+            let mismatch = relationship.create_linked_item(&backend).unwrap_err();
             assert_matches!(
                 mismatch,
                 TaskCreationError::Mismatch { expected, actual: _ }
