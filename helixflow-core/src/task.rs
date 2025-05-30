@@ -78,9 +78,9 @@ impl TaskList {
     /// The Tasklist & Task must share the same lifetime, which will be inherited by the `Contains`.
     pub fn contains<'items>(&'items self, task: &'items Task) -> Contains<'items, Self, Task> {
         Contains {
-            left: &self,
+            left: self,
             sortorder: "a".into(),
-            right: &task,
+            right: task,
         }
     }
 }
