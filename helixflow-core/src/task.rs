@@ -207,6 +207,17 @@ mod tests {
         assert_matches!(
             err,
             HelixFlowError::RelationshipBetweenErrors { left, right }
+            if matches!(
+                left.as_ref(),
+                Err(boxed_err) if matches!(
+                    boxed_err,
+                    HelixFlowError::NotFound {itemtype, id}
+                    if itemtype == "Tasklist" && id == &uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36")
+                )
+            ) && matches!(
+                right.as_ref(),
+                Ok(boxed_task) if boxed_task.as_any().downcast_ref::<Task>() == Some(&task)
+            )
         )
     }
 }
