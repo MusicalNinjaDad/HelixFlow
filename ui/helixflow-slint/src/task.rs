@@ -1,4 +1,4 @@
-use helixflow_core::task::{Task, TaskCreationError, TaskResult};
+use helixflow_core::task::{Task, HelixFlowError, HelixFlowResult};
 use slint::{Global, SharedString, ToSharedString};
 use std::{fmt::Display, rc::Weak};
 use uuid::Uuid;
@@ -6,15 +6,15 @@ use uuid::Uuid;
 use crate::{CurrentTask, HelixFlow, SlintTask};
 
 impl TryFrom<SlintTask> for Task {
-    type Error = TaskCreationError;
-    fn try_from(task: SlintTask) -> TaskResult<Task> {
+    type Error = HelixFlowError;
+    fn try_from(task: SlintTask) -> HelixFlowResult<Task> {
         Ok(if task.id.is_empty() {
             Task::new(task.name.to_string(), None)
         } else {
             Task {
                 name: task.name.to_string().into(),
                 id: Uuid::try_parse(task.id.as_str())
-                    .map_err(|_| TaskCreationError::InvalidID { id: task.id.into() })?,
+                    .map_err(|_| HelixFlowError::InvalidID { id: task.id.into() })?,
                 description: None,
             }
         })
@@ -131,9 +131,9 @@ mod test_rs {
             name: "Task 1".into(),
             id: "foo".into(),
         };
-        let task: TaskResult<Task> = slint_task.try_into();
+        let task: HelixFlowResult<Task> = slint_task.try_into();
         let err = task.unwrap_err();
-        assert_matches!(err, TaskCreationError::InvalidID {id} if id == "foo");
+        assert_matches!(err, HelixFlowError::InvalidID {id} if id == "foo");
     }
 
     #[rstest]

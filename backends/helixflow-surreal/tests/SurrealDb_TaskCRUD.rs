@@ -13,7 +13,7 @@ mod blocking {
 
     use assert_unordered::assert_eq_unordered_sort;
     use helixflow_core::task::{
-        TaskCreationError, TaskList,
+        HelixFlowError, TaskList,
         blocking::{CRUD, Link},
     };
     use helixflow_surreal::blocking::SurrealDb;
@@ -46,7 +46,7 @@ mod blocking {
             let err = Task::get(&backend, &id).unwrap_err();
             assert_matches!(
                 err,
-                TaskCreationError::NotFound { itemtype, id }
+                HelixFlowError::NotFound { itemtype, id }
                 if itemtype == "Task" && id == id
             );
         }

@@ -78,13 +78,13 @@ impl TaskList {
 }
 
 pub struct Contains<LEFT, RIGHT> {
-    pub left: TaskResult<LEFT>,
+    pub left: HelixFlowResult<LEFT>,
     pub sortorder: String,
-    pub right: TaskResult<RIGHT>,
+    pub right: HelixFlowResult<RIGHT>,
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum TaskCreationError {
+pub enum HelixFlowError {
     // The #[from] anyhow::Error will convert anything that offers `into anyhow::Error`.
     #[error("backend error: {0}")]
     BackendError(#[from] anyhow::Error),
@@ -102,7 +102,7 @@ pub enum TaskCreationError {
     NotFound { itemtype: String, id: Uuid },
 }
 
-pub type TaskResult<T> = std::result::Result<T, TaskCreationError>;
+pub type HelixFlowResult<T> = std::result::Result<T, HelixFlowError>;
 
 pub mod blocking {
     use super::*;
@@ -111,8 +111,8 @@ pub mod blocking {
     where
         Self: Sized,
     {
-        fn create<B: Store<Self>>(&self, backend: &B) -> TaskResult<()>;
-        fn get<B: Store<Self>>(backend: &B, id: &Uuid) -> TaskResult<Self>;
+        fn create<B: Store<Self>>(&self, backend: &B) -> HelixFlowResult<()>;
+        fn get<B: Store<Self>>(backend: &B, id: &Uuid) -> HelixFlowResult<Self>;
     }
 
     /// Methods to store and retrieve `ITEM` in a backend
@@ -121,10 +121,10 @@ pub mod blocking {
         ///
         /// The returned `ITEM` should be the actual stored record from the backend - to allow
         /// validation by `CRUD<ITEM>::create()`
-        fn create(&self, item: &ITEM) -> TaskResult<ITEM>;
+        fn create(&self, item: &ITEM) -> HelixFlowResult<ITEM>;
 
         /// Get an `ITEM` from the backend
-        fn get(&self, id: &Uuid) -> TaskResult<ITEM>;
+        fn get(&self, id: &Uuid) -> HelixFlowResult<ITEM>;
     }
 
     impl<ITEM> CRUD for ITEM
@@ -132,12 +132,12 @@ pub mod blocking {
         ITEM: HelixFlowItem + PartialEq + Clone,
     {
         /// Create this item in a given storage backend.
-        fn create<B: Store<ITEM>>(&self, backend: &B) -> TaskResult<()> {
+        fn create<B: Store<ITEM>>(&self, backend: &B) -> HelixFlowResult<()> {
             let created_item = backend.create(self)?;
             if &created_item == self {
                 Ok(())
             } else {
-                Err(TaskCreationError::Mismatch {
+                Err(HelixFlowError::Mismatch {
                     expected: Box::new(self.clone()),
                     actual: Box::new(created_item),
                 })
@@ -145,7 +145,7 @@ pub mod blocking {
         }
 
         /// Get item from `backend` by `id`
-        fn get<B: Store<ITEM>>(backend: &B, id: &Uuid) -> TaskResult<ITEM> {
+        fn get<B: Store<ITEM>>(backend: &B, id: &Uuid) -> HelixFlowResult<ITEM> {
             backend.get(id)
         }
     }
@@ -155,7 +155,7 @@ pub mod blocking {
     where
         Self: Sized,
     {
-        fn create_linked_item<B: Relate<Self>>(&self, backend: &B) -> TaskResult<()>;
+        fn create_linked_item<B: Relate<Self>>(&self, backend: &B) -> HelixFlowResult<()>;
     }
 
     pub trait Linkable<REL: Link> {
@@ -164,27 +164,28 @@ pub mod blocking {
         fn get_linked_items<B: Relate<REL, Left = Self>>(
             &self,
             backend: &B,
-        ) -> TaskResult<impl Iterator<Item = REL>>;
+        ) -> HelixFlowResult<impl Iterator<Item = REL>>;
     }
 
     /// Methods to relate items in a backend
     pub trait Relate<REL: Link> {
         type Left;
         /// Create and link the related item
-        fn create_linked_item(&self, link: &REL) -> TaskResult<REL>;
-        fn get_linked_items(&self, left: &Self::Left) -> TaskResult<impl Iterator<Item = REL>>;
+        fn create_linked_item(&self, link: &REL) -> HelixFlowResult<REL>;
+        fn get_linked_items(&self, left: &Self::Left)
+        -> HelixFlowResult<impl Iterator<Item = REL>>;
     }
 
     impl Link for Contains<TaskList, Task> {
         fn create_linked_item<B: Relate<Contains<TaskList, Task>>>(
             &self,
             backend: &B,
-        ) -> TaskResult<()> {
+        ) -> HelixFlowResult<()> {
             let created = backend.create_linked_item(self)?;
             let expected = self.right.as_ref().unwrap();
             match created.right {
                 Ok(task) if &task == expected => Ok(()),
-                Ok(_) => Err(TaskCreationError::Mismatch {
+                Ok(_) => Err(HelixFlowError::Mismatch {
                     expected: Box::new(expected.clone()),
                     actual: Box::new(created.right?.clone()),
                 }),
@@ -205,7 +206,7 @@ pub mod blocking {
         fn get_linked_items<B>(
             &self,
             backend: &B,
-        ) -> TaskResult<impl Iterator<Item = Contains<TaskList, Task>>>
+        ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>>
         where
             B: Relate<Contains<TaskList, Task>, Left = TaskList>,
         {
@@ -217,7 +218,7 @@ pub mod blocking {
         // TODO: Update this to return a `TaskResult<TaskList>`
         pub fn all<B: StorageBackend>(
             backend: &B,
-        ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
+        ) -> HelixFlowResult<impl Iterator<Item = HelixFlowResult<Task>>> {
             Ok(backend.get_all_tasks()?)
         }
 
@@ -225,24 +226,26 @@ pub mod blocking {
         pub fn tasks<B: StorageBackend>(
             &self,
             backend: &B,
-        ) -> TaskResult<impl Iterator<Item = TaskResult<Task>>> {
+        ) -> HelixFlowResult<impl Iterator<Item = HelixFlowResult<Task>>> {
             Ok(backend.get_tasks_in(&self.id)?)
         }
     }
 
     /// Provide an implementation of a storage backend.
     pub trait StorageBackend {
-        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
+        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>>;
 
-        fn get_tasks_in(&self, id: &Uuid)
-        -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>>;
+        fn get_tasks_in(
+            &self,
+            id: &Uuid,
+        ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>>;
     }
 
     #[derive(Clone, Copy)]
     pub struct TestBackend;
 
     impl Store<Task> for TestBackend {
-        fn create(&self, task: &Task) -> TaskResult<Task> {
+        fn create(&self, task: &Task) -> HelixFlowResult<Task> {
             match task.name {
                 Cow::Borrowed("FAIL") => Err(anyhow!("Failed to create task").into()),
                 Cow::Borrowed("MISMATCH") => {
@@ -252,7 +255,7 @@ pub mod blocking {
             }
         }
 
-        fn get(&self, id: &Uuid) -> TaskResult<Task> {
+        fn get(&self, id: &Uuid) -> HelixFlowResult<Task> {
             match id.to_string().as_str() {
                 "0196b4c9-8447-7959-ae1f-72c7c8a3dd36" => Ok(Task {
                     name: "Task 1".into(),
@@ -264,7 +267,7 @@ pub mod blocking {
                     id: *id,
                     description: None,
                 }),
-                _ => Err(TaskCreationError::NotFound {
+                _ => Err(HelixFlowError::NotFound {
                     itemtype: "Task".into(),
                     id: *id,
                 }),
@@ -273,16 +276,16 @@ pub mod blocking {
     }
 
     impl Store<TaskList> for TestBackend {
-        fn create(&self, item: &TaskList) -> TaskResult<TaskList> {
+        fn create(&self, item: &TaskList) -> HelixFlowResult<TaskList> {
             todo!()
         }
-        fn get(&self, id: &Uuid) -> TaskResult<TaskList> {
+        fn get(&self, id: &Uuid) -> HelixFlowResult<TaskList> {
             match id.to_string().as_str() {
                 "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(TaskList {
                     name: "Test TaskList 1".into(),
                     id: *id,
                 }),
-                _ => Err(TaskCreationError::NotFound {
+                _ => Err(HelixFlowError::NotFound {
                     itemtype: "Tasklist".into(),
                     id: *id,
                 }),
@@ -295,7 +298,7 @@ pub mod blocking {
         fn create_linked_item(
             &self,
             link: &Contains<TaskList, Task>,
-        ) -> TaskResult<Contains<TaskList, Task>> {
+        ) -> HelixFlowResult<Contains<TaskList, Task>> {
             let tasklist = link.left.as_ref().unwrap().clone();
             match tasklist.id.to_string().as_str() {
                 "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(Contains {
@@ -303,7 +306,7 @@ pub mod blocking {
                     sortorder: link.sortorder.clone(),
                     right: self.create(link.right.as_ref().unwrap()),
                 }),
-                _ => Err(TaskCreationError::NotFound {
+                _ => Err(HelixFlowError::NotFound {
                     itemtype: "Tasklist".into(),
                     id: tasklist.id,
                 }),
@@ -312,7 +315,7 @@ pub mod blocking {
         fn get_linked_items(
             &self,
             left: &Self::Left,
-        ) -> TaskResult<impl Iterator<Item = Contains<TaskList, Task>>> {
+        ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
             match left.id.to_string().as_str() {
                 "0196fe23-7c01-7d6b-9e09-5968eb370549" => {
                     let tasks = vec![
@@ -329,7 +332,7 @@ pub mod blocking {
                     ];
                     Ok(tasks.into_iter().map(|task| left.link(&task)))
                 }
-                _ => Err(TaskCreationError::NotFound {
+                _ => Err(HelixFlowError::NotFound {
                     itemtype: "Tasklist".into(),
                     id: left.id,
                 }),
@@ -339,7 +342,7 @@ pub mod blocking {
 
     /// Hardcoded cases to unit test the basic `Task` interface
     impl StorageBackend for TestBackend {
-        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
             Ok(vec![
                 Ok(Task {
                     name: "Task 1".into(),
@@ -357,7 +360,7 @@ pub mod blocking {
         fn get_tasks_in(
             &self,
             id: &Uuid,
-        ) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
+        ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
             self.get_all_tasks()
         }
     }
@@ -401,7 +404,7 @@ pub mod blocking {
             let new_task = Task::new("FAIL", None);
             let backend = TestBackend;
             let err = new_task.create(&backend).unwrap_err();
-            assert_matches!(err, TaskCreationError::BackendError(_))
+            assert_matches!(err, HelixFlowError::BackendError(_))
         }
 
         #[wasm_bindgen_test(unsupported = test)]
@@ -411,7 +414,7 @@ pub mod blocking {
             let err = new_task.create(&backend).unwrap_err();
             assert_matches!(
                 err,
-                TaskCreationError::Mismatch {
+                HelixFlowError::Mismatch {
                     expected: _,
                     actual: _
                 }
@@ -444,7 +447,7 @@ pub mod blocking {
             );
             assert_matches!(
                 err,
-                TaskCreationError::NotFound { itemtype, id }
+                HelixFlowError::NotFound { itemtype, id }
                 if itemtype == "Task" && id == uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2"));
         }
 
@@ -461,7 +464,7 @@ pub mod blocking {
                 id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
                 description: None,
             };
-            let all_tasks: Vec<TaskResult<Task>> = TaskList::all(&backend).unwrap().collect();
+            let all_tasks: Vec<HelixFlowResult<Task>> = TaskList::all(&backend).unwrap().collect();
             assert_eq!(
                 all_tasks
                     .into_iter()
@@ -525,7 +528,7 @@ pub mod blocking {
             let mismatch = relationship.create_linked_item(&backend).unwrap_err();
             assert_matches!(
                 mismatch,
-                TaskCreationError::Mismatch { expected, actual: _ }
+                HelixFlowError::Mismatch { expected, actual: _ }
                 if expected.as_ref().as_any().downcast_ref::<Task>() == Some(&task3)
             )
         }
@@ -552,18 +555,18 @@ pub mod non_blocking {
     where
         Self: Sized,
     {
-        async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> TaskResult<()>;
+        async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> HelixFlowResult<()>;
     }
 
     #[async_trait]
     impl CRUD for Task {
         /// Create this task in a given storage backend.
-        async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> TaskResult<()> {
+        async fn create<B: StorageBackend + Sync>(&self, backend: &B) -> HelixFlowResult<()> {
             let created_task = backend.create(self).await?;
             if &created_task == self {
                 Ok(())
             } else {
-                Err(TaskCreationError::Mismatch {
+                Err(HelixFlowError::Mismatch {
                     expected: Box::new(self.clone()),
                     actual: Box::new(created_task),
                 })
@@ -614,7 +617,7 @@ pub mod non_blocking {
             let new_task = Task::new("FAIL", None);
             let backend = TestBackend;
             let err = new_task.create(&backend).await.unwrap_err();
-            assert_matches!(err, TaskCreationError::BackendError(_))
+            assert_matches!(err, HelixFlowError::BackendError(_))
         }
 
         #[apply(test)]
@@ -624,7 +627,7 @@ pub mod non_blocking {
             let err = new_task.create(&backend).await.unwrap_err();
             assert_matches!(
                 err,
-                TaskCreationError::Mismatch {
+                HelixFlowError::Mismatch {
                     expected: _,
                     actual: _
                 }
