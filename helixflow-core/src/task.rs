@@ -311,12 +311,7 @@ pub mod blocking {
                 "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(Contains {
                     left: link.left.clone(),
                     sortorder: link.sortorder.clone(),
-                    right: link.right.clone(),
-                }),
-                "0196ca5f-d934-7ec8-b042-ae37b94b8432" => Ok(Contains {
-                    left: link.left.clone(),
-                    sortorder: link.sortorder.clone(),
-                    right: Task::new("Mismatch", None),
+                    right: self.create(link.right),
                 }),
                 _ => Err(TaskCreationError::NotFound {
                     itemtype: "Tasklist".into(),
@@ -533,9 +528,9 @@ pub mod blocking {
             let backend = TestBackend;
             let backlog = TaskList {
                 name: "Backlog".into(),
-                id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
+                id: uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549"),
             };
-            let task3 = Task::new("Test task 3", None);
+            let task3 = Task::new("MISMATCH", None);
             let relationship: Contains<TaskList, Task> = backlog.link(&task3);
             let mismatch = relationship.create_linked_item(&backend).unwrap_err();
             assert_matches!(
