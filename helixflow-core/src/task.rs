@@ -4,6 +4,9 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::any::Any;
 use std::borrow::Cow;
+use std::ops::ControlFlow;
+use std::ops::FromResidual;
+use std::ops::Try;
 use uuid::Uuid;
 use uuid::uuid;
 
@@ -83,6 +86,45 @@ pub struct Contains<LEFT, RIGHT> {
     pub right: HelixFlowResult<RIGHT>,
 }
 
+impl<LEFT, RIGHT> Try for Contains<LEFT, RIGHT>
+where
+    LEFT: HelixFlowItem,
+    RIGHT: HelixFlowItem,
+{
+    type Output = Self; // Continue
+    type Residual = Self; // Break
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
+        if self.left.is_ok() && self.right.is_ok() {
+            ControlFlow::Continue(self)
+        } else {
+            ControlFlow::Break(self)
+        }
+    }
+    fn from_output(output: Self::Output) -> Self {
+        todo!()
+    }
+}
+
+impl<LEFT, RIGHT> FromResidual<Contains<LEFT, RIGHT>> for Contains<LEFT, RIGHT>
+where
+    LEFT: HelixFlowItem,
+    RIGHT: HelixFlowItem,
+{
+    fn from_residual(residual: Contains<LEFT, RIGHT>) -> Self {
+        todo!()
+    }
+}
+
+impl<LEFT, RIGHT> FromResidual<Contains<LEFT, RIGHT>> for HelixFlowResult<()>
+where
+    LEFT: HelixFlowItem,
+    RIGHT: HelixFlowItem,
+{
+    fn from_residual(residual: Contains<LEFT, RIGHT>) -> Self {
+        todo!()
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum HelixFlowError {
     // The #[from] anyhow::Error will convert anything that offers `into anyhow::Error`.
@@ -100,9 +142,37 @@ pub enum HelixFlowError {
 
     #[error("404 No {itemtype} found with id {id}")]
     NotFound { itemtype: String, id: Uuid },
+
+    #[error("Relationship contains Errors")]
+    Relationship {},
 }
 
 pub type HelixFlowResult<T> = std::result::Result<T, HelixFlowError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn try_contains_oks() -> HelixFlowResult<()> {
+        let tasklist = TaskList::new("tasklist");
+        let task = Task::new("task", None);
+        let contains = Contains {
+            left: Ok(tasklist.clone()),
+            sortorder: "a".into(),
+            right: Ok(task.clone()),
+        };
+        let contains2 = Contains {
+            left: Ok(tasklist.clone()),
+            sortorder: "a".into(),
+            right: Ok(task.clone()),
+        };
+        let contains = contains?;
+        assert_eq!(contains.left.unwrap(), contains2.left.unwrap());
+        assert_eq!(contains.right.unwrap(), contains2.right.unwrap());
+        Ok(())
+    }
+}
 
 pub mod blocking {
     use super::*;
@@ -182,16 +252,17 @@ pub mod blocking {
             backend: &B,
         ) -> HelixFlowResult<()> {
             if self.left.is_ok() && self.right.is_ok() {
-            let created = backend.create_linked_item(&self)?;
-            let expected = self.right?;
-            match created.right {
-                Ok(task) if task == expected => Ok(()),
-                Ok(_) => Err(HelixFlowError::Mismatch {
-                    expected: Box::new(expected.clone()),
-                    actual: Box::new(created.right?.clone()),
-                }),
-                Err(e) => Err(e),
-            }} else {
+                let created = backend.create_linked_item(&self)?;
+                let expected = self.right?;
+                match created.right {
+                    Ok(task) if task == expected => Ok(()),
+                    Ok(_) => Err(HelixFlowError::Mismatch {
+                        expected: Box::new(expected.clone()),
+                        actual: Box::new(created.right?.clone()),
+                    }),
+                    Err(e) => Err(e),
+                }
+            } else {
                 self.left?;
                 self.right?;
                 // Unreachable hack - either left or right are Err so one of above lines returns

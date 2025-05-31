@@ -4,5 +4,6 @@
 #![feature(assert_matches)]
 #![feature(cfg_boolean_literals)]
 #![feature(associated_type_defaults)]
+#![feature(try_trait_v2)]
 
 pub mod task;
