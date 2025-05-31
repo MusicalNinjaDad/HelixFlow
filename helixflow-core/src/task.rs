@@ -78,21 +78,9 @@ impl TaskList {
 }
 
 pub struct Contains<LEFT, RIGHT> {
-    pub left: LEFT,
+    pub left: TaskResult<LEFT>,
     pub sortorder: String,
-    pub right: RIGHT,
-}
-
-impl TaskList {
-    /// Create a `Contains` relationship where Tasklist -> contains -> Task.
-    #[deprecated = "replaced by Linkable::link"]
-    pub fn contains(&self, task: &Task) -> Contains<Self, Task> {
-        Contains {
-            left: self.clone(),
-            sortorder: "a".into(),
-            right: task.clone(),
-        }
-    }
+    pub right: TaskResult<RIGHT>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -193,13 +181,14 @@ pub mod blocking {
             backend: &B,
         ) -> TaskResult<()> {
             let created = backend.create_linked_item(self)?;
-            if created.right == self.right {
-                Ok(())
-            } else {
-                Err(TaskCreationError::Mismatch {
-                    expected: Box::new(self.right.clone()),
-                    actual: Box::new(created.right.clone()),
-                })
+            let expected = self.right.as_ref().unwrap();
+            match created.right {
+                Ok(task) if &task == expected => Ok(()),
+                Ok(_) => Err(TaskCreationError::Mismatch {
+                    expected: Box::new(expected.clone()),
+                    actual: Box::new(created.right?.clone()),
+                }),
+                Err(e) => Err(e),
             }
         }
     }
@@ -208,9 +197,9 @@ pub mod blocking {
         type Right = Task;
         fn link(&self, task: &Task) -> Contains<TaskList, Task> {
             Contains {
-                left: self.clone(),
+                left: Ok(self.clone()),
                 sortorder: "a".into(),
-                right: task.clone(),
+                right: Ok(task.clone()),
             }
         }
         fn get_linked_items<B>(
@@ -307,15 +296,16 @@ pub mod blocking {
             &self,
             link: &Contains<TaskList, Task>,
         ) -> TaskResult<Contains<TaskList, Task>> {
-            match link.left.id.to_string().as_str() {
+            let tasklist = link.left.as_ref().unwrap().clone();
+            match tasklist.id.to_string().as_str() {
                 "0196fe23-7c01-7d6b-9e09-5968eb370549" => Ok(Contains {
-                    left: link.left.clone(),
+                    left: Ok(tasklist),
                     sortorder: link.sortorder.clone(),
-                    right: self.create(link.right),
+                    right: self.create(link.right.as_ref().unwrap()),
                 }),
                 _ => Err(TaskCreationError::NotFound {
                     itemtype: "Tasklist".into(),
-                    id: link.left.id,
+                    id: tasklist.id,
                 }),
             }
         }
@@ -337,7 +327,7 @@ pub mod blocking {
                             description: None,
                         },
                     ];
-                    Ok(tasks.into_iter().map(|task| left.contains(&task)))
+                    Ok(tasks.into_iter().map(|task| left.link(&task)))
                 }
                 _ => Err(TaskCreationError::NotFound {
                     itemtype: "Tasklist".into(),
@@ -503,7 +493,7 @@ pub mod blocking {
             assert_eq!(
                 tasks
                     .into_iter()
-                    .map(|link| link.right)
+                    .map(|link| link.right.unwrap())
                     .collect::<Vec<Task>>(),
                 vec![task1, task2]
             );
