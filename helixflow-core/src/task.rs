@@ -80,6 +80,7 @@ impl TaskList {
     }
 }
 
+#[derive(Debug)]
 pub struct Contains<LEFT, RIGHT> {
     pub left: HelixFlowResult<LEFT>,
     pub sortorder: String,
@@ -100,8 +101,8 @@ where
             ControlFlow::Break(self)
         }
     }
-    fn from_output(output: Self::Output) -> Self {
-        todo!()
+    fn from_output(_output: Self::Output) -> Self {
+        unimplemented!("Contains? should only be used in funtions returning a Result")
     }
 }
 
@@ -110,8 +111,8 @@ where
     LEFT: HelixFlowItem,
     RIGHT: HelixFlowItem,
 {
-    fn from_residual(residual: Contains<LEFT, RIGHT>) -> Self {
-        todo!()
+    fn from_residual(_residual: Contains<LEFT, RIGHT>) -> Self {
+        unimplemented!("Contains? should only be used in funtions returning a Result")
     }
 }
 
@@ -144,13 +145,17 @@ pub enum HelixFlowError {
     NotFound { itemtype: String, id: Uuid },
 
     #[error("Relationship contains Errors")]
-    Relationship {},
+    RelationshipBetweenErrors {
+        relationship: Box<Contains<TaskList, Task>>,
+    },
 }
 
 pub type HelixFlowResult<T> = std::result::Result<T, HelixFlowError>;
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches::assert_matches;
+
     use super::*;
 
     #[test]
@@ -171,6 +176,29 @@ mod tests {
         assert_eq!(contains.left.unwrap(), contains2.left.unwrap());
         assert_eq!(contains.right.unwrap(), contains2.right.unwrap());
         Ok(())
+    }
+
+    #[test]
+    fn try_contains_err_left() {
+        let task = Task::new("task", None);
+        let contains: Contains<TaskList, Task> = Contains {
+            left: Err(HelixFlowError::NotFound {
+                itemtype: "Tasklist".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            }),
+            sortorder: "try_contains_err_left".into(),
+            right: Ok(task.clone()),
+        };
+        fn is_valid(relationship: Contains<TaskList, Task>) -> HelixFlowResult<()> {
+            relationship?;
+            Ok(())
+        }
+        let err = is_valid(contains).unwrap_err();
+        assert_matches!(
+            err,
+            HelixFlowError::RelationshipBetweenErrors { relationship }
+            if relationship.left.is_err() && relationship.right.is_ok() && relationship.sortorder == "try_contains_err_left"
+        )
     }
 }
 
