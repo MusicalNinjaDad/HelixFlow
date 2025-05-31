@@ -155,7 +155,7 @@ pub mod blocking {
     where
         Self: Sized,
     {
-        fn create_linked_item<B: Relate<Self>>(&self, backend: &B) -> HelixFlowResult<()>;
+        fn create_linked_item<B: Relate<Self>>(self, backend: &B) -> HelixFlowResult<()>;
     }
 
     pub trait Linkable<REL: Link> {
@@ -178,18 +178,24 @@ pub mod blocking {
 
     impl Link for Contains<TaskList, Task> {
         fn create_linked_item<B: Relate<Contains<TaskList, Task>>>(
-            &self,
+            self,
             backend: &B,
         ) -> HelixFlowResult<()> {
-            let created = backend.create_linked_item(self)?;
-            let expected = self.right.as_ref().unwrap();
+            if self.left.is_ok() && self.right.is_ok() {
+            let created = backend.create_linked_item(&self)?;
+            let expected = self.right?;
             match created.right {
-                Ok(task) if &task == expected => Ok(()),
+                Ok(task) if task == expected => Ok(()),
                 Ok(_) => Err(HelixFlowError::Mismatch {
                     expected: Box::new(expected.clone()),
                     actual: Box::new(created.right?.clone()),
                 }),
                 Err(e) => Err(e),
+            }} else {
+                self.left?;
+                self.right?;
+                // Unreachable hack - either left or right are Err so one of above lines returns
+                Ok(())
             }
         }
     }
