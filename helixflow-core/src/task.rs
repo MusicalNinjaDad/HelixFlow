@@ -122,7 +122,16 @@ where
     RIGHT: HelixFlowItem,
 {
     fn from_residual(residual: Contains<LEFT, RIGHT>) -> Self {
-        todo!()
+        Err(HelixFlowError::RelationshipBetweenErrors {
+            left: match residual.left {
+                Ok(item) => Box::new(Ok(Box::new(item))),
+                Err(e) => Box::new(Err(e)),
+            },
+            right: match residual.right {
+                Ok(item) => Box::new(Ok(Box::new(item))),
+                Err(e) => Box::new(Err(e)),
+            },
+        })
     }
 }
 
@@ -144,9 +153,10 @@ pub enum HelixFlowError {
     #[error("404 No {itemtype} found with id {id}")]
     NotFound { itemtype: String, id: Uuid },
 
-    #[error("Relationship contains Errors")]
+    #[error("Relationship between {left:?} and {right:?} contains Errors")]
     RelationshipBetweenErrors {
-        relationship: Box<Contains<TaskList, Task>>,
+        left: Box<HelixFlowResult<Box<dyn HelixFlowItem>>>,
+        right: Box<HelixFlowResult<Box<dyn HelixFlowItem>>>,
     },
 }
 
@@ -196,8 +206,7 @@ mod tests {
         let err = is_valid(contains).unwrap_err();
         assert_matches!(
             err,
-            HelixFlowError::RelationshipBetweenErrors { relationship }
-            if relationship.left.is_err() && relationship.right.is_ok() && relationship.sortorder == "try_contains_err_left"
+            HelixFlowError::RelationshipBetweenErrors { left, right }
         )
     }
 }
