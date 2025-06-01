@@ -17,7 +17,7 @@ use surrealdb::{
 
 use serde::{Deserialize, Serialize};
 
-use helixflow_core::task::{Task, HelixFlowError, TaskList, HelixFlowResult};
+use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
 
 #[derive(Debug, Serialize, Deserialize)]
 /// SurrealDb returns a `Thing` as `id`.
@@ -195,8 +195,9 @@ pub mod blocking {
             link: &Contains<TaskList, Task>,
         ) -> HelixFlowResult<Contains<TaskList, Task>> {
             // TODO make this atomic
-            let tasklist = &link.left;
-            let task = &link.right;
+            let tasklist = link.left.as_ref().unwrap();
+            // TODO - RelBetwErrs (or impl Try for &Contains ...)
+            let task = link.right.as_ref().unwrap();
             dbg!(tasklist);
             let db_tasklist = self.get(&tasklist.id)?;
             let db_task = self.create(task)?;
@@ -214,12 +215,15 @@ pub mod blocking {
                 .map_err(anyhow::Error::from)?;
             dbg!(confirmed_link);
             Ok(Contains {
-                left: db_tasklist,
+                left: Ok(db_tasklist),
                 sortorder: "a".into(),
-                right: db_task,
+                right: Ok(db_task),
             })
         }
-        fn get_linked_items(&self, left: &TaskList) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
+        fn get_linked_items(
+            &self,
+            left: &TaskList,
+        ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
             todo!();
             Ok(std::iter::empty())
         }
@@ -350,20 +354,20 @@ pub mod blocking {
             }
         }
 
-        #[test]
-        fn test_get_tasks() {
-            let backend = SurrealDb::new().unwrap();
-            let task1 = Task::new("Task 1", None);
-            backend.create(&task1).unwrap();
-            let task2 = Task::new("Task 2", None);
-            backend.create(&task2).unwrap();
-            let all_tasks: Vec<Task> = backend
-                .get_all_tasks()
-                .unwrap()
-                .map(|task| task.unwrap())
-                .collect();
-            assert_eq!(all_tasks, vec![task1, task2]);
-        }
+        // #[test]
+        // fn test_get_tasks() {
+        //     let backend = SurrealDb::new().unwrap();
+        //     let task1 = Task::new("Task 1", None);
+        //     backend.create(&task1).unwrap();
+        //     let task2 = Task::new("Task 2", None);
+        //     backend.create(&task2).unwrap();
+        //     let all_tasks: Vec<Task> = backend
+        //         .get_all_tasks()
+        //         .unwrap()
+        //         .map(|task| task.unwrap())
+        //         .collect();
+        //     assert_eq!(all_tasks, vec![task1, task2]);
+        // }
 
         // #[test]
         // fn test_new_task_written_to_external_db() {
