@@ -102,7 +102,7 @@ pub mod blocking {
     use super::*;
     use helixflow_core::task::{
         Contains,
-        blocking::{Relate, StorageBackend, Store},
+        blocking::{Relate, Store},
     };
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
@@ -219,38 +219,36 @@ pub mod blocking {
                 right: db_task,
             })
         }
-    }
-
-    impl<C: Connection> StorageBackend for SurrealDb<C> {
-        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
-            let tasks: Vec<SurrealTask> =
-                self.rt.block_on(self.db.select("Tasks").into_future())?;
-            Ok(tasks.into_iter().map(|task| task.try_into()))
-        }
-
-        fn get_tasks_in(
-            &self,
-            id: &Uuid,
-        ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
-            let tasklist = Thing::from(("Tasklists", Id::Uuid(id.clone().into())));
-            dbg!(&tasklist);
-            let mut tasks = self.rt.block_on(
-                self.db
-                    .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
-                    .bind(("tl", tasklist))
-                    .into_future(),
-            )?;
-            dbg!(&tasks);
-            let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks")?;
-            dbg!(&tasks);
-            Ok(tasks
-                .into_iter()
-                .next()
-                .unwrap()
-                .into_iter()
-                .map(|task| task.try_into()))
+        fn get_linked_items(&self, left: &TaskList) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
+            todo!();
+            Ok(std::iter::empty())
         }
     }
+
+    // impl<C: Connection> StorageBackend for SurrealDb<C> {
+    //     fn get_tasks_in(
+    //         &self,
+    //         id: &Uuid,
+    //     ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
+    //         let tasklist = Thing::from(("Tasklists", Id::Uuid(id.clone().into())));
+    //         dbg!(&tasklist);
+    //         let mut tasks = self.rt.block_on(
+    //             self.db
+    //                 .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
+    //                 .bind(("tl", tasklist))
+    //                 .into_future(),
+    //         )?;
+    //         dbg!(&tasks);
+    //         let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks")?;
+    //         dbg!(&tasks);
+    //         Ok(tasks
+    //             .into_iter()
+    //             .next()
+    //             .unwrap()
+    //             .into_iter()
+    //             .map(|task| task.try_into()))
+    //     }
+    // }
 
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
     /// This is a blocking operation until the db is available.
