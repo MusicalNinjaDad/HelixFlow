@@ -362,6 +362,7 @@ pub mod blocking {
         }
 
         /// Get all Tasks belonging to this TaskList
+        #[deprecated = "use `get_linked_items` instead"]
         pub fn tasks<B: StorageBackend>(
             &self,
             backend: &B,
@@ -371,6 +372,7 @@ pub mod blocking {
     }
 
     /// Provide an implementation of a storage backend.
+    #[deprecated = "Use Store & Relate instead"]
     pub trait StorageBackend {
         fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>>;
 
