@@ -224,8 +224,32 @@ pub mod blocking {
             &self,
             left: &TaskList,
         ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
-            todo!();
-            Ok(std::iter::empty())
+            let tasklist: SurrealTaskList = left.into();
+            dbg!(&tasklist);
+            let mut tasks = self
+                .rt
+                .block_on(
+                    self.db
+                        .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
+                        .bind(("tl", tasklist.id))
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?;
+            dbg!(&tasks);
+            let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks").map_err(anyhow::Error::from)?;
+            dbg!(&tasks);
+            let relationships =
+                tasks
+                    .into_iter()
+                    .next()
+                    .unwrap()
+                    .into_iter()
+                    .map(|task| Contains {
+                        left: Ok(left.clone()),
+                        sortorder: "a".into(),
+                        right: task.try_into(),
+                    });
+            Ok(relationships)
         }
     }
 

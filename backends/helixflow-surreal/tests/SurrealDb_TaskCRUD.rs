@@ -69,12 +69,12 @@ mod blocking {
         let task = Task::new("Test Task 2", None);
         let link = tasklist.link(&task);
         link.create_linked_item(&backend).unwrap();
-        // let tasks: Vec<Task> = tasklist
-        //     .tasks(&backend)
-        //     .unwrap()
-        //     .map(Result::unwrap)
-        //     .collect();
-        // assert_eq!(tasks, vec![task]);
+        let tasks: Vec<Task> = tasklist
+            .get_linked_items(&backend)
+            .unwrap()
+            .map(|link| link.right.unwrap())
+            .collect();
+        assert_eq!(tasks, vec![task]);
     }
 
     #[test]
