@@ -13,7 +13,7 @@ mod blocking {
 
     use assert_unordered::assert_eq_unordered_sort;
     use helixflow_core::task::{
-        Contains, HelixFlowError, TaskList,
+        HelixFlowError, TaskList,
         blocking::{CRUD, Link, Linkable},
     };
     use helixflow_surreal::blocking::SurrealDb;
@@ -86,12 +86,12 @@ mod blocking {
         tasklist.link(&task2).create_linked_item(&backend).unwrap();
         let task3 = Task::new("Test Task 3", None);
         tasklist.link(&task3).create_linked_item(&backend).unwrap();
-        // let tasks: Vec<Task> = tasklist
-        //     .tasks(&backend)
-        //     .unwrap()
-        //     .map(Result::unwrap)
-        //     .collect();
-        // // TODO - Return in sorted order using a sort-criteria stored in the relationship
-        // assert_eq_unordered_sort!(tasks, vec![task2, task3]);
+        let tasks: Vec<Task> = tasklist
+            .get_linked_items(&backend)
+            .unwrap()
+            .map(|link| link.right.unwrap())
+            .collect();
+        // TODO - Return in sorted order using a sort-criteria stored in the relationship
+        assert_eq_unordered_sort!(tasks, vec![task2, task3]);
     }
 }
