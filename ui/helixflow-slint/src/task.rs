@@ -1,9 +1,9 @@
-use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task};
-use slint::{Global, SharedString, ToSharedString};
+use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
+use slint::{Global, ModelRc, SharedString, ToSharedString};
 use std::{fmt::Display, rc::Weak};
 use uuid::Uuid;
 
-use crate::{CurrentTask, HelixFlow, SlintTask};
+use crate::{CurrentTask, HelixFlow, SlintTask, SlintTaskList};
 
 impl TryFrom<SlintTask> for Task {
     type Error = HelixFlowError;
@@ -42,6 +42,35 @@ impl Display for SlintTask {
     }
 }
 
+impl From<TaskList> for SlintTaskList {
+    fn from(tasklist: TaskList) -> Self {
+        Self {
+            name: tasklist.name.to_shared_string(),
+            id: tasklist.id.to_shared_string(),
+        }
+    }
+}
+
+impl TryFrom<SlintTaskList> for TaskList {
+    type Error = HelixFlowError;
+    fn try_from(tasklist: SlintTaskList) -> HelixFlowResult<Self> {
+        Ok(if tasklist.id.is_empty() {
+            TaskList::new(tasklist.name.to_string())
+        } else {
+            TaskList {
+                name: tasklist.name.to_string().into(),
+                id: Uuid::try_parse(tasklist.id.as_str())
+                    .map_err(|_| HelixFlowError::InvalidID { id: tasklist.id.into() })?,
+            }
+        })
+    }
+}
+
+pub trait BacklogSignature {
+    fn get_tasklist(&self) -> SlintTaskList;
+    fn set_tasks(&self, model: ModelRc<SlintTask>);
+}
+
 pub mod blocking {
     use crate::Backlog;
 
@@ -50,7 +79,7 @@ pub mod blocking {
         Contains, TaskList,
         blocking::{CRUD, Linkable, Relate, Store},
     };
-    use slint::{ModelRc, VecModel};
+    use slint::{ComponentHandle, ModelRc, VecModel};
 
     pub fn create_task<BKEND>(
         helixflow: slint::Weak<HelixFlow>,
@@ -71,6 +100,28 @@ pub mod blocking {
         }
     }
 
+    pub fn load_backlog<ROOT, BKEND>(
+        root_component: slint::Weak<ROOT>,
+        backend: Weak<BKEND>,
+    ) -> impl FnMut() + 'static
+    where
+        BKEND: Relate<Contains<TaskList, Task>> + 'static,
+        ROOT: ComponentHandle + BacklogSignature + 'static,
+    {
+        move || {
+            let root_component = root_component.unwrap();
+            let backend = backend.upgrade().unwrap();
+            let tasklist = root_component.get_tasklist();
+            let tl = TaskList::try_from(tasklist).unwrap();
+            let backlog_entries: VecModel<SlintTask> = tl
+                .get_linked_items(backend.as_ref())
+                .unwrap()
+                .map(|task| task.right.unwrap().into())
+                .collect();
+            root_component.set_tasks(ModelRc::new(backlog_entries));
+        }
+    }
+
     impl Backlog {
         pub fn init<BKEND>(&self, backend: Weak<BKEND>, id: &Uuid)
         where
@@ -83,7 +134,7 @@ pub mod blocking {
                 .unwrap()
                 .map(|task| task.right.unwrap().into())
                 .collect();
-            self.set_backlog_name(contents.name.into_owned().into());
+            // self.set_backlog_name(contents.name.into_owned().into());
             self.set_tasks(ModelRc::new(backlog_entries));
         }
     }
@@ -308,8 +359,10 @@ mod test_slint {
             let bl = backlog.as_weak();
             backlog.on_quick_create_task(move |mut task: SlintTask| {
                 task.id = "1".into();
-                bl.unwrap()
-                    .set_backlog_name(format!("{}: {}", task.id, task.name).into());
+                bl.unwrap().set_tasklist(SlintTaskList {
+                    name: format!("{}: {}", task.id, task.name).into(),
+                    id: "2".into(),
+                });
             });
             let backlog_title = get!(&backlog, "Backlog::backlog_title");
             assert_eq!(

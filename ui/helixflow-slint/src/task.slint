@@ -50,15 +50,21 @@ export component TaskBox inherits Window {
     }
 }
 
+export struct SlintTaskList {
+    name: string,
+    id: string,   
+}
+
 export component Backlog inherits Window {
-    in property <string> backlog_name: "Backlog";
+    in property <SlintTaskList> tasklist: {name: "Backlog", id: "1"};
     in property <[SlintTask]> tasks: [{ name: "Error loading tasks" }, { name: "from database" }];
     callback quick_create_task(SlintTask);
+    callback load;
     VerticalBox {
         backlog_title := Text {
             accessible-label: "Backlog name";
-            text: root.backlog_name;
-            accessible-value: root.backlog_name;
+            text: root.tasklist.name;
+            accessible-value: root.tasklist.name;
         }
 
         HorizontalBox {

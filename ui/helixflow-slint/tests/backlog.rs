@@ -46,13 +46,16 @@ fn initialise_backlog() {
     list_elements!(&backlog);
 
     let backend = Rc::new(TestBackend);
-    let be = Rc::downgrade(&backend);
 
     let backlog_id = uuid!("0196fe23-7c01-7d6b-9e09-5968eb370549");
+    let tasklist = TaskList::get(backend.as_ref(), &backlog_id).unwrap();
 
-    backlog.init(be, &backlog_id);
+    let be = Rc::downgrade(&backend);
+    backlog.set_tasklist(tasklist.into());
+    backlog.invoke_load();
 
-    assert_eq!(backlog.get_backlog_name(), "Test TaskList 1");
+    let backlog_name = get!(&backlog, "Backlog::backlog_title");
+    assert_eq!(backlog_name.accessible_value().unwrap(), "Test TaskList 1".to_shared_string());
     let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
     let expected_tasks: Vec<SlintTask> = TaskList::get(backend.as_ref(), &backlog_id)
         .unwrap()
