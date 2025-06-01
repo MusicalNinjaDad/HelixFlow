@@ -80,11 +80,20 @@ impl TaskList {
     }
 }
 
+pub trait Relationship {}
+
 #[derive(Debug)]
 pub struct Contains<LEFT, RIGHT> {
     pub left: HelixFlowResult<LEFT>,
     pub sortorder: String,
     pub right: HelixFlowResult<RIGHT>,
+}
+
+impl<LEFT, RIGHT> Relationship for Contains<LEFT, RIGHT>
+where
+    LEFT: HelixFlowItem,
+    RIGHT: HelixFlowItem,
+{
 }
 
 impl<LEFT, RIGHT> Try for Contains<LEFT, RIGHT>
