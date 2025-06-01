@@ -1,7 +1,10 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
-use helixflow_core::task::blocking::{StorageBackend, TestBackend};
+use helixflow_core::task::{
+    TaskList,
+    blocking::{CRUD, Linkable, TestBackend},
+};
 use helixflow_slint::{Backlog, SlintTask, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use uuid::uuid;
@@ -51,9 +54,11 @@ fn initialise_backlog() {
 
     assert_eq!(backlog.get_backlog_name(), "Test TaskList 1");
     let backlog_tasks = ElementHandle::find_by_element_type_name(&backlog, "TaskListItem");
-    let expected_tasks: Vec<SlintTask> = backend
-        .get_tasks_in(&backlog_id)
+    let expected_tasks: Vec<SlintTask> = TaskList::get(backend.as_ref(), &backlog_id)
         .unwrap()
+        .get_linked_items(backend.as_ref())
+        .unwrap()
+        .map(|link| link.right)
         .map(Result::unwrap)
         .map(Into::into)
         .collect();

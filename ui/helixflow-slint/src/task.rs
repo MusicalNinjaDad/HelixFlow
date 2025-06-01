@@ -1,4 +1,4 @@
-use helixflow_core::task::{Task, HelixFlowError, HelixFlowResult};
+use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task};
 use slint::{Global, SharedString, ToSharedString};
 use std::{fmt::Display, rc::Weak};
 use uuid::Uuid;
@@ -47,8 +47,8 @@ pub mod blocking {
 
     use super::*;
     use helixflow_core::task::{
-        TaskList,
-        blocking::{CRUD, StorageBackend, Store},
+        Contains, TaskList,
+        blocking::{CRUD, Linkable, Relate, Store},
     };
     use slint::{ModelRc, VecModel};
 
@@ -74,14 +74,14 @@ pub mod blocking {
     impl Backlog {
         pub fn init<BKEND>(&self, backend: Weak<BKEND>, id: &Uuid)
         where
-            BKEND: Store<TaskList> + StorageBackend + 'static,
+            BKEND: Store<TaskList> + Relate<Contains<TaskList, Task>> + 'static,
         {
             let backend = backend.upgrade().unwrap();
             let contents = TaskList::get(backend.as_ref(), id).unwrap();
             let backlog_entries: VecModel<SlintTask> = contents
-                .tasks(backend.as_ref())
+                .get_linked_items(backend.as_ref())
                 .unwrap()
-                .map(|task| task.unwrap().into())
+                .map(|task| task.right.unwrap().into())
                 .collect();
             self.set_backlog_name(contents.name.into_owned().into());
             self.set_tasks(ModelRc::new(backlog_entries));
