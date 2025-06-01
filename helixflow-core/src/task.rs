@@ -319,22 +319,17 @@ pub mod blocking {
             self,
             backend: &B,
         ) -> HelixFlowResult<()> {
-            if self.left.is_ok() && self.right.is_ok() {
-                let created = backend.create_linked_item(&self)?;
-                let expected = self.right?;
-                match created.right {
-                    Ok(task) if task == expected => Ok(()),
-                    Ok(_) => Err(HelixFlowError::Mismatch {
-                        expected: Box::new(expected.clone()),
-                        actual: Box::new(created.right?.clone()),
-                    }),
-                    Err(e) => Err(e),
-                }
-            } else {
-                self.left?;
-                self.right?;
-                // Unreachable hack - either left or right are Err so one of above lines returns
-                Ok(())
+            let relationship = self?;
+            let created = backend.create_linked_item(&relationship)?;
+            let _tasklist_ok = created.left?;
+            let expected = relationship.right?;
+            match created.right {
+                Ok(task) if task == expected => Ok(()),
+                Ok(_) => Err(HelixFlowError::Mismatch {
+                    expected: Box::new(expected.clone()),
+                    actual: Box::new(created.right?.clone()),
+                }),
+                Err(e) => Err(e),
             }
         }
     }
