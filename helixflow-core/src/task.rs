@@ -319,10 +319,10 @@ pub mod blocking {
             self,
             backend: &B,
         ) -> HelixFlowResult<()> {
-            let relationship = self?;
-            let created = backend.create_linked_item(&relationship)?;
+            let valid_relationship = self?;
+            let created = backend.create_linked_item(&valid_relationship)?;
             let _tasklist_ok = created.left?;
-            let expected = relationship.right?;
+            let expected = valid_relationship.right?;
             match created.right {
                 Ok(task) if task == expected => Ok(()),
                 Ok(_) => Err(HelixFlowError::Mismatch {
