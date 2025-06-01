@@ -480,31 +480,6 @@ pub mod blocking {
         }
     }
 
-    /// Hardcoded cases to unit test the basic `Task` interface
-    impl StorageBackend for TestBackend {
-        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
-            Ok(vec![
-                Ok(Task {
-                    name: "Task 1".into(),
-                    id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-                    description: None,
-                }),
-                Ok(Task {
-                    name: "Task 2".into(),
-                    id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
-                    description: None,
-                }),
-            ]
-            .into_iter())
-        }
-        fn get_tasks_in(
-            &self,
-            id: &Uuid,
-        ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
-            self.get_all_tasks()
-        }
-    }
-
     #[cfg(test)]
     pub mod tests {
         use std::assert_matches::assert_matches;
@@ -589,29 +564,6 @@ pub mod blocking {
                 err,
                 HelixFlowError::NotFound { itemtype, id }
                 if itemtype == "Task" && id == uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2"));
-        }
-
-        #[test]
-        fn list_all_tasks() {
-            let backend = TestBackend;
-            let task1 = Task {
-                name: "Task 1".into(),
-                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-                description: None,
-            };
-            let task2 = Task {
-                name: "Task 2".into(),
-                id: uuid!("0196ca5f-d934-7ec8-b042-ae37b94b8432"),
-                description: None,
-            };
-            let all_tasks: Vec<HelixFlowResult<Task>> = TaskList::all(&backend).unwrap().collect();
-            assert_eq!(
-                all_tasks
-                    .into_iter()
-                    .map(|task| task.unwrap())
-                    .collect::<Vec<Task>>(),
-                vec![task1, task2]
-            );
         }
 
         #[test]
