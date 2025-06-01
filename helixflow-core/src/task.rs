@@ -80,20 +80,34 @@ impl TaskList {
     }
 }
 
-pub trait Relationship {}
+/// A valid usage of a relationship struct, defining acceptable types for left & right.
+///
+/// E.g. to allow `Contains`to be used for `TaskList -> Contains -> Task`:
+/// ```ignore
+/// impl Relationship for Contains<TaskList, Task> {
+///    type Left = TaskList;
+///    type Right = Task;
+/// }
+/// ```
+// TODO: Add derive macro to generate Relationship, Try & FromResidual for valid type pairings
+pub trait Relationship
+where
+    Self: Sized,
+{
+    type Left;
+    type Right;
+}
+
+impl Relationship for Contains<TaskList, Task> {
+    type Left = TaskList;
+    type Right = Task;
+}
 
 #[derive(Debug)]
 pub struct Contains<LEFT, RIGHT> {
     pub left: HelixFlowResult<LEFT>,
     pub sortorder: String,
     pub right: HelixFlowResult<RIGHT>,
-}
-
-impl<LEFT, RIGHT> Relationship for Contains<LEFT, RIGHT>
-where
-    LEFT: HelixFlowItem,
-    RIGHT: HelixFlowItem,
-{
 }
 
 impl<LEFT, RIGHT> Try for Contains<LEFT, RIGHT>
@@ -280,15 +294,14 @@ pub mod blocking {
     /// `impl Link<REL> for LEFT` gives `Left Rel:(-> link_type -> Right)`
     pub trait Link
     where
-        Self: Sized,
+        Self: Relationship,
     {
         fn create_linked_item<B: Relate<Self>>(self, backend: &B) -> HelixFlowResult<()>;
     }
 
     pub trait Linkable<REL: Link> {
-        type Right;
-        fn link(&self, right: &Self::Right) -> REL;
-        fn get_linked_items<B: Relate<REL, Left = Self>>(
+        fn link(&self, right: &REL::Right) -> REL;
+        fn get_linked_items<B: Relate<REL>>(
             &self,
             backend: &B,
         ) -> HelixFlowResult<impl Iterator<Item = REL>>;
@@ -296,11 +309,9 @@ pub mod blocking {
 
     /// Methods to relate items in a backend
     pub trait Relate<REL: Link> {
-        type Left;
         /// Create and link the related item
         fn create_linked_item(&self, link: &REL) -> HelixFlowResult<REL>;
-        fn get_linked_items(&self, left: &Self::Left)
-        -> HelixFlowResult<impl Iterator<Item = REL>>;
+        fn get_linked_items(&self, left: &REL::Left) -> HelixFlowResult<impl Iterator<Item = REL>>;
     }
 
     impl Link for Contains<TaskList, Task> {
@@ -329,7 +340,6 @@ pub mod blocking {
     }
 
     impl Linkable<Contains<TaskList, Task>> for TaskList {
-        type Right = Task;
         fn link(&self, task: &Task) -> Contains<TaskList, Task> {
             Contains {
                 left: Ok(self.clone()),
@@ -342,7 +352,7 @@ pub mod blocking {
             backend: &B,
         ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>>
         where
-            B: Relate<Contains<TaskList, Task>, Left = TaskList>,
+            B: Relate<Contains<TaskList, Task>>,
         {
             backend.get_linked_items(self)
         }
@@ -428,7 +438,6 @@ pub mod blocking {
     }
 
     impl Relate<Contains<TaskList, Task>> for TestBackend {
-        type Left = TaskList;
         fn create_linked_item(
             &self,
             link: &Contains<TaskList, Task>,
@@ -448,7 +457,7 @@ pub mod blocking {
         }
         fn get_linked_items(
             &self,
-            left: &Self::Left,
+            left: &TaskList,
         ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
             match left.id.to_string().as_str() {
                 "0196fe23-7c01-7d6b-9e09-5968eb370549" => {
