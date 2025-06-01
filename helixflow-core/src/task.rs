@@ -353,35 +353,6 @@ pub mod blocking {
         }
     }
 
-    impl TaskList {
-        // TODO: Update this to return a `TaskResult<TaskList>`
-        pub fn all<B: StorageBackend>(
-            backend: &B,
-        ) -> HelixFlowResult<impl Iterator<Item = HelixFlowResult<Task>>> {
-            Ok(backend.get_all_tasks()?)
-        }
-
-        /// Get all Tasks belonging to this TaskList
-        #[deprecated = "use `get_linked_items` instead"]
-        pub fn tasks<B: StorageBackend>(
-            &self,
-            backend: &B,
-        ) -> HelixFlowResult<impl Iterator<Item = HelixFlowResult<Task>>> {
-            Ok(backend.get_tasks_in(&self.id)?)
-        }
-    }
-
-    /// Provide an implementation of a storage backend.
-    #[deprecated = "Use Store & Relate instead"]
-    pub trait StorageBackend {
-        fn get_all_tasks(&self) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>>;
-
-        fn get_tasks_in(
-            &self,
-            id: &Uuid,
-        ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>>;
-    }
-
     #[derive(Clone, Copy)]
     pub struct TestBackend;
 
