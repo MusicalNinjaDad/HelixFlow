@@ -1,11 +1,9 @@
 use std::rc::Rc;
 
-use helixflow_core::task::blocking::{Link, Linkable};
 use helixflow_core::task::{Task, TaskList, blocking::CRUD};
-use helixflow_slint::SlintTask;
-use helixflow_slint::task::blocking::load_backlog;
+use helixflow_slint::task::blocking::{create_task_in_backlog, load_backlog};
 use slint::platform::PointerEventButton;
-use slint::{ComponentHandle, Global, ModelRc, VecModel};
+use slint::{ComponentHandle, Global};
 
 use helixflow_slint::{CurrentTask, HelixFlow, task::blocking::create_task, test::*};
 use helixflow_surreal::blocking::SurrealDb;
@@ -77,26 +75,7 @@ fn add_tasks_to_backlog() {
 
     let hf = helixflow.as_weak();
     let be = Rc::downgrade(&backend);
-    helixflow.on_create_backlog_task(move |slinttask| {
-        let helixflow = hf.upgrade().unwrap();
-        let backend = be.upgrade().unwrap();
-
-        let backlog: TaskList = helixflow.get_backlog().try_into().unwrap();
-        let task: Task = slinttask.try_into().unwrap();
-
-        backlog
-            .link(&task)
-            .create_linked_item(backend.as_ref())
-            .unwrap();
-        let backlog_entries: VecModel<SlintTask> = backlog
-            .get_linked_items(backend.as_ref())
-            .unwrap()
-            .map(|link| link.right)
-            .map(Result::unwrap)
-            .map(Into::into)
-            .collect();
-        helixflow.set_backlog_contents(ModelRc::new(backlog_entries));
-    });
+    helixflow.on_create_backlog_task(create_task_in_backlog(hf, be));
 
     let hf = helixflow.as_weak();
     slint::spawn_local(async move {

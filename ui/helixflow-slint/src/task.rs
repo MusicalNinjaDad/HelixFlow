@@ -96,7 +96,7 @@ pub mod blocking {
     use super::*;
     use helixflow_core::task::{
         Contains, TaskList,
-        blocking::{CRUD, Linkable, Relate, Store},
+        blocking::{CRUD, Link, Linkable, Relate, Store},
     };
     use slint::{ComponentHandle, ModelRc, VecModel};
 
@@ -137,6 +137,37 @@ pub mod blocking {
                 .get_linked_items(backend.as_ref())
                 .unwrap()
                 .map(|task| task.right.unwrap().into())
+                .collect();
+            root_component.set_tasks(ModelRc::new(backlog_entries));
+        }
+    }
+
+    #[allow(private_bounds)] // BacklogSignature hack is private & should only be impl'd here ...
+    pub fn create_task_in_backlog<ROOT, BKEND>(
+        root_component: slint::Weak<ROOT>,
+        backend: Weak<BKEND>,
+    ) -> impl FnMut(SlintTask) + 'static
+    where
+        BKEND: Relate<Contains<TaskList, Task>> + 'static,
+        ROOT: ComponentHandle + BacklogSignature + 'static,
+    {
+        move |slinttask| {
+            let root_component = root_component.upgrade().unwrap();
+            let backend = backend.upgrade().unwrap();
+
+            let backlog: TaskList = root_component.get_tasklist().try_into().unwrap();
+            let task: Task = slinttask.try_into().unwrap();
+
+            backlog
+                .link(&task)
+                .create_linked_item(backend.as_ref())
+                .unwrap();
+            let backlog_entries: VecModel<SlintTask> = backlog
+                .get_linked_items(backend.as_ref())
+                .unwrap()
+                .map(|link| link.right)
+                .map(Result::unwrap)
+                .map(Into::into)
                 .collect();
             root_component.set_tasks(ModelRc::new(backlog_entries));
         }
