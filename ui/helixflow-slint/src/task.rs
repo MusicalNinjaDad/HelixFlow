@@ -69,7 +69,7 @@ impl TryFrom<SlintTaskList> for TaskList {
     }
 }
 
-pub trait BacklogSignature {
+trait BacklogSignature {
     fn get_tasklist(&self) -> SlintTaskList;
     fn set_tasks(&self, model: ModelRc<SlintTask>);
 }
@@ -112,6 +112,7 @@ pub mod blocking {
         }
     }
 
+    #[allow(private_bounds)] // BacklogSignature hack is private & should only be impl'd here ...
     pub fn load_backlog<ROOT, BKEND>(
         root_component: slint::Weak<ROOT>,
         backend: Weak<BKEND>,
