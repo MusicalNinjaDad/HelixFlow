@@ -83,6 +83,15 @@ impl BacklogSignature for Backlog {
     }
 }
 
+impl BacklogSignature for HelixFlow {
+    fn get_tasklist(&self) -> SlintTaskList {
+        self.get_backlog()
+    }
+    fn set_tasks(&self, model: ModelRc<SlintTask>) {
+        self.set_backlog_contents(model);
+    }
+}
+
 pub mod blocking {
     use crate::Backlog;
 

@@ -1,10 +1,12 @@
-import { TaskBox, Backlog, SlintTask } from "task.slint";
+import { TaskBox, Backlog, SlintTask, SlintTaskList } from "task.slint";
 import { HorizontalBox } from "std-widgets.slint";
 export { SlintTask, SlintTaskList, CurrentTask, Backlog, TaskBox } from "task.slint";
 
 export component HelixFlow inherits Window {
     callback create_task;
     callback create_backlog_task <=> this_week_backlog.quick_create_task;
+    callback load_backlog <=> this_week_backlog.load;
+    in property <SlintTaskList> backlog <=> this_week_backlog.tasklist;
     in property <[SlintTask]> backlog_contents <=> this_week_backlog.tasks;
     in property <bool> create_enabled: true;
     in-out property <string> task_name: taskbox.task_name;

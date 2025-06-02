@@ -3,6 +3,7 @@ use std::rc::Rc;
 use helixflow_core::task::blocking::{Link, Linkable};
 use helixflow_core::task::{Task, TaskList, blocking::CRUD};
 use helixflow_slint::SlintTask;
+use helixflow_slint::task::blocking::load_backlog;
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global, ModelRc, VecModel};
 
@@ -68,16 +69,23 @@ fn add_tasks_to_backlog() {
 
     let backlog = TaskList::new("This week");
     backlog.create(backend.as_ref()).unwrap();
-    let empty_backlog: VecModel<SlintTask> = VecModel::default();
-    helixflow.set_backlog_contents(ModelRc::new(empty_backlog));
+    helixflow.set_backlog(backlog.into());
 
-    let he = helixflow.as_weak();
+    let hf = helixflow.as_weak();
+    let be = Rc::downgrade(&backend);
+    helixflow.on_load_backlog(load_backlog(hf, be));
+
+    let hf = helixflow.as_weak();
     let be = Rc::downgrade(&backend);
     helixflow.on_create_backlog_task(move |slinttask| {
         // let task: Task = slinttask.into();
+        let helixflow = hf.upgrade().unwrap();
+        let backend = be.upgrade().unwrap();
+
         let taskname: String = slinttask.name.into();
         let task = Task::new(taskname, None);
-        let backend = be.upgrade().unwrap();
+
+        let backlog: TaskList = helixflow.get_backlog().try_into().unwrap();
         backlog
             .link(&task)
             .create_linked_item(backend.as_ref())
@@ -89,7 +97,6 @@ fn add_tasks_to_backlog() {
             .map(Result::unwrap)
             .map(Into::into)
             .collect();
-        let helixflow = he.upgrade().unwrap();
         helixflow.set_backlog_contents(ModelRc::new(backlog_entries));
     });
 
