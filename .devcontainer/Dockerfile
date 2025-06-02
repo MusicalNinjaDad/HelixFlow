@@ -92,6 +92,15 @@ RUN umask 0002 \
     miniserve \
     wasm-pack
 
+RUN umask 0002 \
+&& cat <<EOF >> ${CARGO_HOME}/config.toml
+[target.'cfg(target_os = "linux")']
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[target.'cfg(target_os = "windows")']
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+EOF
+
 USER root
 
 # Install SurrealDb server
