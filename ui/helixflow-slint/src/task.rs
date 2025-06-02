@@ -389,7 +389,7 @@ mod test_slint {
         }
 
         #[rstest]
-        fn quick_create(backlog: Backlog) {
+        fn click_quick_create(backlog: Backlog) {
             let bl = backlog.as_weak();
             backlog.on_quick_create_task(move |mut task: SlintTask| {
                 task.id = "1".into();

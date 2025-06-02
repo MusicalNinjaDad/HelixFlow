@@ -85,7 +85,6 @@ fn add_tasks_to_backlog() {
         task_entry.set_accessible_value("New task 1");
         let create = get!(&helixflow, "Backlog::quick_create_button");
         create.single_click(PointerEventButton::Left).await;
-
         slint::quit_event_loop().unwrap();
     })
     .unwrap();
@@ -95,4 +94,6 @@ fn add_tasks_to_backlog() {
     let tasks = ElementHandle::find_by_element_type_name(&helixflow, "TaskListItem");
     let expected_task_values = ["New task 1"];
     assert_values!(tasks, expected_task_values);
+    let task_entry = get!(&helixflow, "Backlog::new_task_entry");
+    assert_eq!(task_entry.accessible_value().unwrap(), "");
 }

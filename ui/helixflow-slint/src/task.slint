@@ -77,7 +77,8 @@ export component Backlog inherits Window {
                 accessible-label: "Create new task";
                 text: "+";
                 clicked => {
-                    root.quick_create_task({ name: new_task_entry.text })
+                    root.quick_create_task({ name: new_task_entry.text });
+                    new_task_entry.text = "";
                 }
             }
         }
