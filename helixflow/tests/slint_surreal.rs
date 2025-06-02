@@ -77,6 +77,7 @@ fn add_tasks_to_backlog() {
     let be = Rc::downgrade(&backend);
     helixflow.on_create_backlog_task(create_task_in_backlog(hf, be));
 
+    helixflow.invoke_load_backlog();
     let hf = helixflow.as_weak();
     slint::spawn_local(async move {
         let helixflow = hf.unwrap();
