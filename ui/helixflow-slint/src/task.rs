@@ -3,7 +3,7 @@ use slint::{Global, ModelRc, SharedString, ToSharedString};
 use std::{fmt::Display, rc::Weak};
 use uuid::Uuid;
 
-use crate::{CurrentTask, HelixFlow, SlintTask, SlintTaskList};
+use crate::{Backlog, CurrentTask, HelixFlow, SlintTask, SlintTaskList};
 
 impl TryFrom<SlintTask> for Task {
     type Error = HelixFlowError;
@@ -59,8 +59,11 @@ impl TryFrom<SlintTaskList> for TaskList {
         } else {
             TaskList {
                 name: tasklist.name.to_string().into(),
-                id: Uuid::try_parse(tasklist.id.as_str())
-                    .map_err(|_| HelixFlowError::InvalidID { id: tasklist.id.into() })?,
+                id: Uuid::try_parse(tasklist.id.as_str()).map_err(|_| {
+                    HelixFlowError::InvalidID {
+                        id: tasklist.id.into(),
+                    }
+                })?,
             }
         })
     }
@@ -69,6 +72,15 @@ impl TryFrom<SlintTaskList> for TaskList {
 pub trait BacklogSignature {
     fn get_tasklist(&self) -> SlintTaskList;
     fn set_tasks(&self, model: ModelRc<SlintTask>);
+}
+
+impl BacklogSignature for Backlog {
+    fn get_tasklist(&self) -> SlintTaskList {
+        self.get_tasklist()
+    }
+    fn set_tasks(&self, model: ModelRc<SlintTask>) {
+        self.set_tasks(model);
+    }
 }
 
 pub mod blocking {
