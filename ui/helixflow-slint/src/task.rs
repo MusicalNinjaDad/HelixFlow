@@ -93,8 +93,6 @@ impl BacklogSignature for HelixFlow {
 }
 
 pub mod blocking {
-    use crate::Backlog;
-
     use super::*;
     use helixflow_core::task::{
         Contains, TaskList,
@@ -141,23 +139,6 @@ pub mod blocking {
                 .map(|task| task.right.unwrap().into())
                 .collect();
             root_component.set_tasks(ModelRc::new(backlog_entries));
-        }
-    }
-
-    impl Backlog {
-        pub fn init<BKEND>(&self, backend: Weak<BKEND>, id: &Uuid)
-        where
-            BKEND: Store<TaskList> + Relate<Contains<TaskList, Task>> + 'static,
-        {
-            let backend = backend.upgrade().unwrap();
-            let contents = TaskList::get(backend.as_ref(), id).unwrap();
-            let backlog_entries: VecModel<SlintTask> = contents
-                .get_linked_items(backend.as_ref())
-                .unwrap()
-                .map(|task| task.right.unwrap().into())
-                .collect();
-            // self.set_backlog_name(contents.name.into_owned().into());
-            self.set_tasks(ModelRc::new(backlog_entries));
         }
     }
 }
