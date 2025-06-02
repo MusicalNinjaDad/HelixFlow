@@ -78,14 +78,12 @@ fn add_tasks_to_backlog() {
     let hf = helixflow.as_weak();
     let be = Rc::downgrade(&backend);
     helixflow.on_create_backlog_task(move |slinttask| {
-        // let task: Task = slinttask.into();
         let helixflow = hf.upgrade().unwrap();
         let backend = be.upgrade().unwrap();
 
-        let taskname: String = slinttask.name.into();
-        let task = Task::new(taskname, None);
-
         let backlog: TaskList = helixflow.get_backlog().try_into().unwrap();
+        let task: Task = slinttask.try_into().unwrap();
+
         backlog
             .link(&task)
             .create_linked_item(backend.as_ref())
