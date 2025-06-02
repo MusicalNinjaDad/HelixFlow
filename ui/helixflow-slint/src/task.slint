@@ -56,10 +56,14 @@ export struct SlintTaskList {
 }
 
 export component Backlog inherits Window {
-    in property <SlintTaskList> tasklist: {name: "Backlog", id: "1"};
+    in property <SlintTaskList> tasklist: { name: "Backlog", id: "1" };
     in property <[SlintTask]> tasks: [{ name: "Error loading tasks" }, { name: "from database" }];
     callback quick_create_task(SlintTask);
     callback load;
+    function create_linked_task() {
+        root.quick_create_task({ name: new_task_entry.text });
+        new_task_entry.text = "";
+    }
     VerticalBox {
         backlog_title := Text {
             accessible-label: "Backlog name";
@@ -71,14 +75,16 @@ export component Backlog inherits Window {
             new_task_entry := LineEdit {
                 accessible-label: "New task name";
                 placeholder-text: self.accessible-label;
+                accepted(text) => {
+                    create_linked_task()
+                }
             }
 
             quick_create_button := Button {
                 accessible-label: "Create new task";
                 text: "+";
                 clicked => {
-                    root.quick_create_task({ name: new_task_entry.text });
-                    new_task_entry.text = "";
+                    create_linked_task()
                 }
             }
         }
