@@ -599,6 +599,7 @@ pub mod blocking {
 }
 
 /// Non-blocking version of Task CRUD.
+#[cfg(false)]
 pub mod non_blocking {
     // TODO update to full functionality and identical sematics based on blocking version.
     use async_trait::async_trait;

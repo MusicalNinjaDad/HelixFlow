@@ -1,4 +1,5 @@
 #![feature(assert_matches)]
+#![feature(cfg_boolean_literals)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use std::{borrow::Cow, rc::Rc};
@@ -412,6 +413,7 @@ pub mod blocking {
     }
 }
 
+#[cfg(false)]
 pub mod non_blocking {
 
     use super::*;
