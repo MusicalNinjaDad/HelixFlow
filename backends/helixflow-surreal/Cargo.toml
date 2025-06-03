@@ -5,14 +5,12 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
-async-trait.workspace = true
 helixflow-core.workspace = true
 log.workspace = true
 serde = { workspace = true, features = ["derive"] }
 surrealdb.workspace = true
 tokio = { workspace = true, features = ["rt", "time"] }
 
-wasm-bindgen-futures.workspace = true
 wasm-bindgen-test.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

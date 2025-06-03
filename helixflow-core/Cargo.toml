@@ -5,14 +5,9 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
-async-trait.workspace = true
 serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 uuid = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
-macro_rules_attribute.workspace = true
 wasm-bindgen-test.workspace = true
-
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-smol-macros.workspace = true
