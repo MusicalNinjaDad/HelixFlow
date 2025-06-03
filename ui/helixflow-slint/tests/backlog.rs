@@ -1,11 +1,8 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
-use helixflow_core::task::{
-    TaskList,
-    blocking::{CRUD, Linkable, TestBackend},
-};
-use helixflow_slint::{Backlog, SlintTask, task::blocking::load_backlog, test::*};
+use helixflow_core::task::{CRUD, Linkable, TaskList, TestBackend};
+use helixflow_slint::{Backlog, SlintTask, task::load_backlog, test::*};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use uuid::uuid;
 

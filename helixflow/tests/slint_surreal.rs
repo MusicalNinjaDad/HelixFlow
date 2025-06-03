@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use helixflow_core::task::{Task, TaskList, blocking::CRUD};
-use helixflow_slint::task::blocking::{create_task_in_backlog, load_backlog};
+use helixflow_core::task::{CRUD, Task, TaskList};
+use helixflow_slint::task::{create_task_in_backlog, load_backlog};
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global};
 
-use helixflow_slint::{CurrentTask, HelixFlow, task::blocking::create_task, test::*};
-use helixflow_surreal::blocking::SurrealDb;
+use helixflow_slint::{CurrentTask, HelixFlow, task::create_task, test::*};
+use helixflow_surreal::SurrealDb;
 
 #[test]
 fn test_create_task() {
