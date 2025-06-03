@@ -2,13 +2,12 @@
 #![feature(assert_matches)]
 //! Test calling Task::CRUD_fn(&SurrealDb) ...
 
-use helixflow_core::task::Task;
-use surrealdb::Uuid;
-
+use assert_unordered::assert_eq_unordered_sort;
 use std::assert_matches::assert_matches;
 
-use assert_unordered::assert_eq_unordered_sort;
-use helixflow_core::task::{CRUD, HelixFlowError, Link, Linkable, TaskList};
+use surrealdb::Uuid;
+
+use helixflow_core::task::{CRUD, HelixFlowError, Link, Linkable, Task, TaskList};
 use helixflow_surreal::SurrealDb;
 
 #[test]

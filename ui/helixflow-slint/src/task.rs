@@ -1,9 +1,13 @@
-use helixflow_core::task::{CRUD, Contains, Link, Linkable, Relate, Store};
-use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
+use std::{fmt::Display, rc::Weak};
+
+use uuid::Uuid;
+
 use slint::{ComponentHandle, VecModel};
 use slint::{Global, ModelRc, SharedString, ToSharedString};
-use std::{fmt::Display, rc::Weak};
-use uuid::Uuid;
+
+use helixflow_core::task::{
+    CRUD, Contains, HelixFlowError, HelixFlowResult, Link, Linkable, Relate, Store, Task, TaskList,
+};
 
 use crate::{Backlog, CurrentTask, HelixFlow, SlintTask, SlintTaskList};
 

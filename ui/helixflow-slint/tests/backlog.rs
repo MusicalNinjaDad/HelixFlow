@@ -1,10 +1,12 @@
 #![feature(cfg_boolean_literals)]
 use std::rc::Rc;
 
+use uuid::uuid;
+
+use slint::{ComponentHandle, ModelRc, VecModel};
+
 use helixflow_core::task::{CRUD, Linkable, TaskList, TestBackend};
 use helixflow_slint::{Backlog, SlintTask, task::load_backlog, test::*};
-use slint::{ComponentHandle, ModelRc, VecModel};
-use uuid::uuid;
 
 #[test]
 fn update_tasks_in_event_loop() {

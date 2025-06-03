@@ -1,14 +1,14 @@
 //! The fundamental `Task` building block and related functions.
 
+use std::{
+    any::Any,
+    borrow::Cow,
+    ops::{ControlFlow, FromResidual, Try},
+};
+
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use std::any::Any;
-use std::borrow::Cow;
-use std::ops::ControlFlow;
-use std::ops::FromResidual;
-use std::ops::Try;
-use uuid::Uuid;
-use uuid::uuid;
+use uuid::{Uuid, uuid};
 
 /// Marker trait for our data items
 pub trait HelixFlowItem

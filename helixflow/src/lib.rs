@@ -1,11 +1,13 @@
 use std::rc::Rc;
 
-use helixflow_core::task::{CRUD, TaskList};
 use log::debug;
 use slint::ComponentHandle;
 
-use helixflow_slint::HelixFlow;
-use helixflow_slint::task::{create_task, create_task_in_backlog, load_backlog};
+use helixflow_core::task::{CRUD, TaskList};
+use helixflow_slint::{
+    HelixFlow,
+    task::{create_task, create_task_in_backlog, load_backlog},
+};
 use helixflow_surreal::SurrealDb;
 
 pub fn run_helixflow() {
