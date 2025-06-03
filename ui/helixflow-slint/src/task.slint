@@ -7,8 +7,24 @@ export global CurrentTask {
     in-out property <SlintTask> task;
 }
 
-import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
-    export component TaskBox inherits Window {
+import { Button, LineEdit, VerticalBox, HorizontalBox, StandardListView, ListView } from "std-widgets.slint";
+
+component TaskListItem {
+    in property <SlintTask> task;
+    in property <int> index;
+    accessible-role: list-item;
+    accessible-label: "Task " + (root.index + 1);
+    accessible-value: task.name;
+    Rectangle {
+        height: self.min-height;
+        Text {
+            accessible-role: none;
+            text: root.accessible-value;
+        }
+    }
+}
+
+export component TaskBox inherits Window {
     callback create_task;
     in property <bool> create_enabled: true;
     in-out property <string> task_name: task_name_entry.text;
@@ -29,6 +45,55 @@ import { Button, LineEdit, VerticalBox } from "std-widgets.slint";
             text: "Create";
             clicked() => {
                 root.create_task();
+            }
+        }
+    }
+}
+
+export struct SlintTaskList {
+    name: string,
+    id: string,   
+}
+
+export component Backlog inherits Window {
+    in property <SlintTaskList> tasklist: { name: "Backlog", id: "1" };
+    in property <[SlintTask]> tasks: [{ name: "Error loading tasks" }, { name: "from database" }];
+    callback quick_create_task(SlintTask);
+    callback load;
+    function create_linked_task() {
+        root.quick_create_task({ name: new_task_entry.text });
+        new_task_entry.text = "";
+    }
+    VerticalBox {
+        backlog_title := Text {
+            accessible-label: "Backlog name";
+            text: root.tasklist.name;
+            accessible-value: root.tasklist.name;
+        }
+
+        HorizontalBox {
+            new_task_entry := LineEdit {
+                accessible-label: "New task name";
+                placeholder-text: self.accessible-label;
+                accepted(text) => {
+                    create_linked_task()
+                }
+            }
+
+            quick_create_button := Button {
+                accessible-label: "Create new task";
+                text: "+";
+                clicked => {
+                    create_linked_task()
+                }
+            }
+        }
+
+        tasks_list := ListView {
+            accessible-label: "Tasks";
+            for task[index] in root.tasks: TaskListItem {
+                task: task;
+                index: index;
             }
         }
     }

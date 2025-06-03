@@ -7,7 +7,8 @@
         "WORKSPACEDIR": "${containerWorkspaceFolder}",
         "CARGO_INCREMENTAL": "1",
         // https://github.com/rust-lang/rust-analyzer/issues/17149
-        "RUSTC_BOOTSTRAP": "1"
+        "RUSTC_BOOTSTRAP": "1",
+        "RUST_BACKTRACE": "full"
     },
 
     // "onCreateCommand": "mkdir --parents logs/surrealdb && logrotate -v .devcontainer/logrotate.conf -s logs/logrotate.status",

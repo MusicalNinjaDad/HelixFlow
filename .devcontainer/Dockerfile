@@ -70,9 +70,12 @@ USER root:rust
 
 RUN umask 0002 \
 && rustup-init -v -y \
-&& rustup target add wasm32-unknown-unknown\
+&& rustup target add \
+    wasm32-unknown-unknown \
+    x86_64-pc-windows-msvc \
 && rustup component add \
     clippy \
+    llvm-tools \
     llvm-tools-preview \
     rustfmt \
     rust-src
@@ -83,10 +86,20 @@ RUN umask 0002 \
     cargo-cyclonedx \        
     cargo-expand \
     cargo-nextest \
+    cargo-xwin \
     grcov \
     mdbook \
     miniserve \
     wasm-pack
+
+RUN umask 0002 \
+&& cat <<EOF >> ${CARGO_HOME}/config.toml
+[target.'cfg(target_os = "linux")']
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[target.'cfg(target_os = "windows")']
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+EOF
 
 USER root
 

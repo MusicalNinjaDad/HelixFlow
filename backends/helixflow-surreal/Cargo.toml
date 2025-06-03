@@ -19,3 +19,6 @@ wasm-bindgen-test.workspace = true
 getrandom.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+
+[dev-dependencies]
+assert_unordered.workspace = true

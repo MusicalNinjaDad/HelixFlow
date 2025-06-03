@@ -1,8 +1,10 @@
+#![feature(assert_matches)]
+#![feature(cfg_boolean_literals)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use std::{borrow::Cow, rc::Rc};
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use log::debug;
 use surrealdb::{
     Connection, Surreal, Uuid,
@@ -16,7 +18,7 @@ use surrealdb::{
 
 use serde::{Deserialize, Serialize};
 
-use helixflow_core::task::{Task, TaskCreationError, TaskResult};
+use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
 
 #[derive(Debug, Serialize, Deserialize)]
 /// SurrealDb returns a `Thing` as `id`.
@@ -30,11 +32,11 @@ struct SurrealTask {
 }
 
 impl TryFrom<SurrealTask> for Task {
-    type Error = TaskCreationError;
-    fn try_from(task: SurrealTask) -> TaskResult<Task> {
+    type Error = HelixFlowError;
+    fn try_from(task: SurrealTask) -> HelixFlowResult<Task> {
         let id = match task.id.id {
             Id::Uuid(id) => Ok(id.into()),
-            _ => Err(TaskCreationError::InvalidID {
+            _ => Err(HelixFlowError::InvalidID {
                 id: task.id.id.to_string(),
             }),
         };
@@ -56,10 +58,53 @@ impl From<&Task> for SurrealTask {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+/// SurrealDb returns a `Thing` as `id`.
+///
+/// A `Thing` is a wierd SurrealDb Struct with a `tb` (= "table") and `id` field,
+/// both as owned `String`s :-x (!!)
+struct SurrealTaskList {
+    name: Cow<'static, str>,
+    id: Thing,
+}
+
+impl TryFrom<SurrealTaskList> for TaskList {
+    type Error = HelixFlowError;
+    fn try_from(tasklist: SurrealTaskList) -> HelixFlowResult<TaskList> {
+        let id = match tasklist.id.id {
+            Id::Uuid(id) => Ok(id.into()),
+            _ => Err(HelixFlowError::InvalidID {
+                id: tasklist.id.id.to_string(),
+            }),
+        };
+        Ok(TaskList {
+            name: tasklist.name,
+            id: id?,
+        })
+    }
+}
+
+impl From<&TaskList> for SurrealTaskList {
+    fn from(tasklist: &TaskList) -> Self {
+        SurrealTaskList {
+            name: tasklist.name.clone(),
+            id: Thing::from(("Tasklists", Id::Uuid(tasklist.id.into()))),
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Link {
+    r#in: Thing,
+    out: Thing,
+}
+
 pub mod blocking {
 
     use super::*;
-    use helixflow_core::task::blocking::StorageBackend;
+    use helixflow_core::task::{
+        Contains,
+        blocking::{Relate, Store},
+    };
     /// An instance of a SurrealDb ready to use as a `StorageBackend`
     ///
     /// This requires some form of instantiation function, the exact specification of which will depend
@@ -77,8 +122,8 @@ pub mod blocking {
         rt: Rc<tokio::runtime::Runtime>,
     }
 
-    impl<C: Connection> StorageBackend for SurrealDb<C> {
-        fn create(&self, task: &Task) -> anyhow::Result<Task> {
+    impl<C: Connection> Store<Task> for SurrealDb<C> {
+        fn create(&self, task: &Task) -> HelixFlowResult<Task> {
             dbg!(task);
             let dbtask: SurrealTask = self
                 .rt
@@ -87,30 +132,152 @@ pub mod blocking {
                         .create("Tasks")
                         .content(SurrealTask::from(task))
                         .into_future(),
-                )?
+                )
+                .map_err(anyhow::Error::from)?
                 .with_context(|| format!("Creating new record for {:#?} in SurrealDb", task))?;
             let checktask = dbtask.try_into()?;
             dbg!(&checktask);
             Ok(checktask)
         }
 
-        fn get(&self, id: &Uuid) -> anyhow::Result<Task> {
+        fn get(&self, id: &Uuid) -> HelixFlowResult<Task> {
             let dbtask: Option<SurrealTask> = self
                 .rt
-                .block_on(self.db.select(("Tasks", *id)).into_future())?;
+                .block_on(self.db.select(("Tasks", *id)).into_future())
+                .map_err(anyhow::Error::from)?;
             if let Some(task) = dbtask {
                 Ok(task.try_into()?)
             } else {
-                Err(anyhow!("Unknown task ID: {}", id))
+                Err(HelixFlowError::NotFound {
+                    itemtype: "Task".into(),
+                    id: *id,
+                })
             }
         }
+    }
 
-        fn get_tasks(&self) -> anyhow::Result<impl Iterator<Item = TaskResult<Task>>> {
-            let tasks: Vec<SurrealTask> =
-                self.rt.block_on(self.db.select("Tasks").into_future())?;
-            Ok(tasks.into_iter().map(|task| task.try_into()))
+    impl<C: Connection> Store<TaskList> for SurrealDb<C> {
+        fn create(&self, tasklist: &TaskList) -> HelixFlowResult<TaskList> {
+            dbg!(tasklist);
+            let dbtasklist: SurrealTaskList = self
+                .rt
+                .block_on(
+                    self.db
+                        .create("Tasklists")
+                        .content(SurrealTaskList::from(tasklist))
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?
+                .with_context(|| format!("Creating new record for {:#?} in SurrealDb", tasklist))?;
+            let check_tasklist = dbtasklist.try_into()?;
+            dbg!(&check_tasklist);
+            Ok(check_tasklist)
+        }
+
+        fn get(&self, id: &Uuid) -> HelixFlowResult<TaskList> {
+            let db_tasklist: Option<SurrealTaskList> = self
+                .rt
+                .block_on(self.db.select(("Tasklists", *id)).into_future())
+                .map_err(anyhow::Error::from)?;
+            if let Some(tasklist) = db_tasklist {
+                Ok(tasklist.try_into()?)
+            } else {
+                Err(HelixFlowError::NotFound {
+                    itemtype: "TaskList".into(),
+                    id: *id,
+                })
+            }
         }
     }
+
+    impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
+        fn create_linked_item(
+            &self,
+            link: &Contains<TaskList, Task>,
+        ) -> HelixFlowResult<Contains<TaskList, Task>> {
+            // TODO make this atomic
+            let tasklist = link.left.as_ref().unwrap();
+            // TODO - RelBetwErrs (or impl Try for &Contains ...)
+            let task = link.right.as_ref().unwrap();
+            dbg!(tasklist);
+            let db_tasklist = self.get(&tasklist.id)?;
+            let db_task = self.create(task)?;
+            let confirmed_link: Vec<Link> = self
+                .rt
+                .block_on(
+                    self.db
+                        .insert("contains")
+                        .relation(Link {
+                            r#in: SurrealTaskList::from(&db_tasklist).id,
+                            out: SurrealTask::from(&db_task).id,
+                        })
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?;
+            dbg!(confirmed_link);
+            Ok(Contains {
+                left: Ok(db_tasklist),
+                sortorder: "a".into(),
+                right: Ok(db_task),
+            })
+        }
+        fn get_linked_items(
+            &self,
+            left: &TaskList,
+        ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>> {
+            let tasklist: SurrealTaskList = left.into();
+            dbg!(&tasklist);
+            let mut tasks = self
+                .rt
+                .block_on(
+                    self.db
+                        .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
+                        .bind(("tl", tasklist.id))
+                        .into_future(),
+                )
+                .map_err(anyhow::Error::from)?;
+            dbg!(&tasks);
+            let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks").map_err(anyhow::Error::from)?;
+            dbg!(&tasks);
+            let relationships =
+                tasks
+                    .into_iter()
+                    .next()
+                    .unwrap()
+                    .into_iter()
+                    .map(|task| Contains {
+                        left: Ok(left.clone()),
+                        sortorder: "a".into(),
+                        right: task.try_into(),
+                    });
+            Ok(relationships)
+        }
+    }
+
+    // impl<C: Connection> StorageBackend for SurrealDb<C> {
+    //     fn get_tasks_in(
+    //         &self,
+    //         id: &Uuid,
+    //     ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
+    //         let tasklist = Thing::from(("Tasklists", Id::Uuid(id.clone().into())));
+    //         dbg!(&tasklist);
+    //         let mut tasks = self.rt.block_on(
+    //             self.db
+    //                 .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
+    //                 .bind(("tl", tasklist))
+    //                 .into_future(),
+    //         )?;
+    //         dbg!(&tasks);
+    //         let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks")?;
+    //         dbg!(&tasks);
+    //         Ok(tasks
+    //             .into_iter()
+    //             .next()
+    //             .unwrap()
+    //             .into_iter()
+    //             .map(|task| task.try_into()))
+    //     }
+    // }
 
     /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
     /// This is a blocking operation until the db is available.
@@ -171,6 +338,8 @@ pub mod blocking {
     #[cfg(test)]
     mod tests {
 
+        use std::assert_matches::assert_matches;
+
         use super::*;
 
         wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
@@ -190,7 +359,7 @@ pub mod blocking {
                 let new_task = Task::new("Test Task 2", None);
                 let backend = SurrealDb::new().unwrap();
                 backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-                let stored_task = backend.get(&new_task.id).unwrap();
+                let stored_task: Task = backend.get(&new_task.id).unwrap();
                 assert_eq!(stored_task, new_task);
             }
         }
@@ -200,25 +369,30 @@ pub mod blocking {
             {
                 let backend = SurrealDb::new().unwrap();
                 let id = Uuid::now_v7();
-                let err = backend.get(&id).unwrap_err();
-                assert_eq!(format!("{}", err), format!("Unknown task ID: {}", id));
+                let res: HelixFlowResult<Task> = backend.get(&id);
+                let err = res.unwrap_err();
+                assert_matches!(
+                    err,
+                    HelixFlowError::NotFound { itemtype, id }
+                    if itemtype == "Task" && id == id
+                );
             }
         }
 
-        #[test]
-        fn test_get_tasks() {
-            let backend = SurrealDb::new().unwrap();
-            let task1 = Task::new("Task 1", None);
-            backend.create(&task1).unwrap();
-            let task2 = Task::new("Task 2", None);
-            backend.create(&task2).unwrap();
-            let all_tasks: Vec<Task> = backend
-                .get_tasks()
-                .unwrap()
-                .map(|task| task.unwrap())
-                .collect();
-            assert_eq!(all_tasks, vec![task1, task2]);
-        }
+        // #[test]
+        // fn test_get_tasks() {
+        //     let backend = SurrealDb::new().unwrap();
+        //     let task1 = Task::new("Task 1", None);
+        //     backend.create(&task1).unwrap();
+        //     let task2 = Task::new("Task 2", None);
+        //     backend.create(&task2).unwrap();
+        //     let all_tasks: Vec<Task> = backend
+        //         .get_all_tasks()
+        //         .unwrap()
+        //         .map(|task| task.unwrap())
+        //         .collect();
+        //     assert_eq!(all_tasks, vec![task1, task2]);
+        // }
 
         // #[test]
         // fn test_new_task_written_to_external_db() {
@@ -239,6 +413,7 @@ pub mod blocking {
     }
 }
 
+#[cfg(false)]
 pub mod non_blocking {
 
     use super::*;
