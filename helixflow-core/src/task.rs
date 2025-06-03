@@ -185,66 +185,6 @@ pub enum HelixFlowError {
 
 pub type HelixFlowResult<T> = std::result::Result<T, HelixFlowError>;
 
-#[cfg(test)]
-mod tests1 {
-    use std::assert_matches::assert_matches;
-
-    use super::*;
-
-    #[test]
-    fn try_contains_oks() -> HelixFlowResult<()> {
-        let tasklist = TaskList::new("tasklist");
-        let task = Task::new("task", None);
-        let contains = Contains {
-            left: Ok(tasklist.clone()),
-            sortorder: "a".into(),
-            right: Ok(task.clone()),
-        };
-        let contains2 = Contains {
-            left: Ok(tasklist.clone()),
-            sortorder: "a".into(),
-            right: Ok(task.clone()),
-        };
-        let contains = contains?;
-        assert_eq!(contains.left.unwrap(), contains2.left.unwrap());
-        assert_eq!(contains.right.unwrap(), contains2.right.unwrap());
-        Ok(())
-    }
-
-    #[test]
-    fn try_contains_err_left() {
-        let task = Task::new("task", None);
-        let contains: Contains<TaskList, Task> = Contains {
-            left: Err(HelixFlowError::NotFound {
-                itemtype: "Tasklist".into(),
-                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
-            }),
-            sortorder: "try_contains_err_left".into(),
-            right: Ok(task.clone()),
-        };
-        fn is_valid(relationship: Contains<TaskList, Task>) -> HelixFlowResult<()> {
-            relationship?;
-            Ok(())
-        }
-        let err = is_valid(contains).unwrap_err();
-        assert_matches!(
-            err,
-            HelixFlowError::RelationshipBetweenErrors { left, right }
-            if matches!(
-                left.as_ref(),
-                Err(boxed_err) if matches!(
-                    boxed_err,
-                    HelixFlowError::NotFound {itemtype, id}
-                    if itemtype == "Tasklist" && id == &uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36")
-                )
-            ) && matches!(
-                right.as_ref(),
-                Ok(boxed_task) if boxed_task.as_any().downcast_ref::<Task>() == Some(&task)
-            )
-        )
-    }
-}
-
 pub trait CRUD
 where
     Self: Sized,
@@ -454,6 +394,59 @@ pub mod tests {
     use super::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[test]
+    fn try_contains_oks() -> HelixFlowResult<()> {
+        let tasklist = TaskList::new("tasklist");
+        let task = Task::new("task", None);
+        let contains = Contains {
+            left: Ok(tasklist.clone()),
+            sortorder: "a".into(),
+            right: Ok(task.clone()),
+        };
+        let contains2 = Contains {
+            left: Ok(tasklist.clone()),
+            sortorder: "a".into(),
+            right: Ok(task.clone()),
+        };
+        let contains = contains?;
+        assert_eq!(contains.left.unwrap(), contains2.left.unwrap());
+        assert_eq!(contains.right.unwrap(), contains2.right.unwrap());
+        Ok(())
+    }
+
+    #[test]
+    fn try_contains_err_left() {
+        let task = Task::new("task", None);
+        let contains: Contains<TaskList, Task> = Contains {
+            left: Err(HelixFlowError::NotFound {
+                itemtype: "Tasklist".into(),
+                id: uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36"),
+            }),
+            sortorder: "try_contains_err_left".into(),
+            right: Ok(task.clone()),
+        };
+        fn is_valid(relationship: Contains<TaskList, Task>) -> HelixFlowResult<()> {
+            relationship?;
+            Ok(())
+        }
+        let err = is_valid(contains).unwrap_err();
+        assert_matches!(
+            err,
+            HelixFlowError::RelationshipBetweenErrors { left, right }
+            if matches!(
+                left.as_ref(),
+                Err(boxed_err) if matches!(
+                    boxed_err,
+                    HelixFlowError::NotFound {itemtype, id}
+                    if itemtype == "Tasklist" && id == &uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36")
+                )
+            ) && matches!(
+                right.as_ref(),
+                Ok(boxed_task) if boxed_task.as_any().downcast_ref::<Task>() == Some(&task)
+            )
+        )
+    }
 
     #[wasm_bindgen_test(unsupported = test)]
     fn test_new_task() {
