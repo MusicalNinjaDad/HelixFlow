@@ -245,31 +245,6 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
     }
 }
 
-// impl<C: Connection> StorageBackend for SurrealDb<C> {
-//     fn get_tasks_in(
-//         &self,
-//         id: &Uuid,
-//     ) -> anyhow::Result<impl Iterator<Item = HelixFlowResult<Task>>> {
-//         let tasklist = Thing::from(("Tasklists", Id::Uuid(id.clone().into())));
-//         dbg!(&tasklist);
-//         let mut tasks = self.rt.block_on(
-//             self.db
-//                 .query("SELECT ->contains->Tasks.* AS tasks FROM $tl")
-//                 .bind(("tl", tasklist))
-//                 .into_future(),
-//         )?;
-//         dbg!(&tasks);
-//         let tasks: Vec<Vec<SurrealTask>> = tasks.take("tasks")?;
-//         dbg!(&tasks);
-//         Ok(tasks
-//             .into_iter()
-//             .next()
-//             .unwrap()
-//             .into_iter()
-//             .map(|task| task.try_into()))
-//     }
-// }
-
 /// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
 /// This is a blocking operation until the db is available.
 impl SurrealDb<Db> {
@@ -369,36 +344,4 @@ mod tests {
             );
         }
     }
-
-    // #[test]
-    // fn test_get_tasks() {
-    //     let backend = SurrealDb::new().unwrap();
-    //     let task1 = Task::new("Task 1", None);
-    //     backend.create(&task1).unwrap();
-    //     let task2 = Task::new("Task 2", None);
-    //     backend.create(&task2).unwrap();
-    //     let all_tasks: Vec<Task> = backend
-    //         .get_all_tasks()
-    //         .unwrap()
-    //         .map(|task| task.unwrap())
-    //         .collect();
-    //     assert_eq!(all_tasks, vec![task1, task2]);
-    // }
-
-    // #[test]
-    // fn test_new_task_written_to_external_db() {
-    //     {
-    //         let mut new_task = Task {
-    //             name: "Test Task 2".into(),
-    //             id: None,
-    //             description: None,
-    //         };
-    //         let backend = SurrealDb::connect("localhost:8010").unwrap();
-    //         new_task.create(&backend).unwrap(); // Unwrap to check we don't get any errors
-    //         let id = new_task.id.unwrap();
-    //         let stored_task: Task<Thing> = backend.get(id).unwrap();
-    //         assert_eq!(stored_task.name, new_task.name);
-    //         assert_eq!(stored_task.description, new_task.description);
-    //     }
-    // }
 }
