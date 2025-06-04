@@ -3,16 +3,12 @@
 
 use std::{borrow::Cow, rc::Rc};
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use log::debug;
 use serde::{Deserialize, Serialize};
 use surrealdb::{
     Connection, Surreal, Uuid,
-    engine::{
-        local::{Db, Mem},
-        remote::ws::{Client, Ws},
-    },
-    opt::auth::Root,
+    engine::local::{Db, Mem},
     sql::{Id, Thing},
 };
 
@@ -258,37 +254,6 @@ impl SurrealDb<Db> {
         let db = rt
             .block_on(Surreal::new::<Mem>(()).into_future())
             .context("Initialising database")?;
-        debug!("Selecting database namespace");
-        rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
-            .context("Selecting database namespace")?;
-        debug!("Stuffing the runtime in an Rc");
-        let runtime = Rc::new(rt);
-        debug!("Done connecting to database");
-        Ok(Self { db, rt: runtime })
-    }
-}
-
-/// Connect via WebSocket to given address, auth as root, on HelixFlow:HelixFlow (ns:db)
-impl SurrealDb<Client> {
-    pub fn connect(address: &str) -> Result<Self> {
-        debug!("Initialising tokio runtime");
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .context("Initialising dedicated tokio runtime for surreal in memory database.")?;
-        debug!("Connecting to database");
-        let db = rt
-            .block_on(Surreal::new::<Ws>(address).into_future())
-            .context("Connecting to database")?;
-        debug!("Signing in to database");
-        rt.block_on(
-            db.signin(Root {
-                username: "root",
-                password: "root",
-            })
-            .into_future(),
-        )
-        .context("Signing in to database")?;
         debug!("Selecting database namespace");
         rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
             .context("Selecting database namespace")?;
