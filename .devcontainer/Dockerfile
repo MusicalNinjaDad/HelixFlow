@@ -71,7 +71,6 @@ USER root:rust
 RUN umask 0002 \
 && rustup-init -v -y \
 && rustup target add \
-    wasm32-unknown-unknown \
     x86_64-pc-windows-msvc \
 && rustup component add \
     clippy \
