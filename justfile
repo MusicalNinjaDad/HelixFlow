@@ -15,6 +15,7 @@ coverage-report:
         --ignore-not-existing \
         --ignore "**/tests/*" \
         --ignore "**/build.rs" \
+        --ignore "target/**" \
         --output-path target/coverage
 
 serve-coverage:
