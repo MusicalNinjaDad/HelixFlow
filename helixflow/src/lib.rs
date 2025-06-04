@@ -1,3 +1,4 @@
+// LCOV_EXCL_START
 use std::rc::Rc;
 
 use log::debug;

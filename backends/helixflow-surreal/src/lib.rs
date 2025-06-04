@@ -264,6 +264,7 @@ impl SurrealDb<Db> {
     }
 }
 
+// LCOV_EXCL_START
 /// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
 /// `block_on()` will not run either, as rt cannot be idle.
 #[cfg(test)]
@@ -310,3 +311,4 @@ mod tests {
         }
     }
 }
+// LCOV_EXCL_STOP

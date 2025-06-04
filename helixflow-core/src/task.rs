@@ -386,6 +386,7 @@ impl Relate<Contains<TaskList, Task>> for TestBackend {
     }
 }
 
+// LCOV_EXCL_START
 #[cfg(test)]
 mod tests {
     use std::assert_matches::assert_matches;
@@ -584,3 +585,4 @@ mod tests {
         )
     }
 }
+// LCOV_EXCL_STOP
