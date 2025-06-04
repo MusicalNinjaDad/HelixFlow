@@ -265,18 +265,14 @@ impl SurrealDb<Db> {
     }
 }
 
-
-/// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
-/// `block_on()` will not run either, as rt cannot be idle.
+// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
+// `block_on()` will not run either, as rt cannot be idle.
 #[cfg(test)]
 #[coverage(off)]
 mod tests {
-
     use std::assert_matches::assert_matches;
 
     use super::*;
-
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
     fn test_new_task() {

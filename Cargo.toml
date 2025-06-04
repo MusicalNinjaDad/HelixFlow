@@ -18,17 +18,10 @@ thiserror = "2.0.12"
 tokio = { version = "1.44.2" }
 uuid = { version = "1.16.0", features = ["v7", "js"] }
 
-# wasm
-console_error_panic_hook = { version = "0.1.7" }
-console_log = { version = "1.0.0" }
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
-wasm-bindgen = { version = "0.2" }
-
 # dev-only dependencies
 assert_unordered = "0.3.5"
 i-slint-backend-testing = { git = "https://github.com/slint-ui/slint" }
 rstest = "0.25.0"
-wasm-bindgen-test = "0.3.50"
 
 # build dependencies
 slint-build = { git = "https://github.com/slint-ui/slint" }

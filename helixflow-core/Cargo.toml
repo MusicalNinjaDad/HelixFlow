@@ -8,6 +8,3 @@ anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 uuid = { workspace = true, features = ["serde"] }
-
-[dev-dependencies]
-wasm-bindgen-test.workspace = true

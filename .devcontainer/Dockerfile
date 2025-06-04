@@ -71,7 +71,6 @@ USER root:rust
 RUN umask 0002 \
 && rustup-init -v -y \
 && rustup target add \
-    wasm32-unknown-unknown \
     x86_64-pc-windows-msvc \
 && rustup component add \
     clippy \
@@ -83,14 +82,15 @@ RUN umask 0002 \
 RUN umask 0002 \
 && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
 && cargo binstall --secure -y \
-    cargo-cyclonedx \        
+    cargo-cyclonedx \
     cargo-expand \
+    cargo-machete \
     cargo-nextest \
+    cargo-udeps \
     cargo-xwin \
     grcov \
     mdbook \
-    miniserve \
-    wasm-pack
+    miniserve
 
 RUN umask 0002 \
 && cat <<EOF >> ${CARGO_HOME}/config.toml
@@ -112,10 +112,6 @@ RUN dnf install -y \
     libinput \
     wayland-devel \
     xorg-x11-server-Xwayland
-
-# Chromium for headless wasm testing
-RUN dnf install -y \
-    chromium
 
 # ---
 # Final setup steps

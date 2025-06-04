@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2024"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
 helixflow-core.workspace = true
@@ -14,12 +14,5 @@ log.workspace = true
 slint.workspace = true
 
 [dev-dependencies]
-futures = "0.3.31"
 i-slint-backend-testing.workspace = true
 uuid.workspace = true
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook.workspace = true
-console_log.workspace = true
-getrandom.workspace = true
-wasm-bindgen.workspace = true

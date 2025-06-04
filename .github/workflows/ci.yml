@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [
           ubuntu-latest, 
-          # windows-latest,
+          windows-latest,
         ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -24,7 +24,7 @@ jobs:
         with:
           shared-key: "helixflow"
       - name: Cache cargo registry and build
-        if: ${{ runner.os == 'Windows' }}
+        if: ${{ runner.os == 'Windows' && (github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[CI-win]')) }}
         uses: actions/cache@v4
         with:
           path: |
@@ -41,27 +41,9 @@ jobs:
         with:
           tool: cargo-nextest
       - name: "Test"
+        if: ${{ runner.os != 'Windows' || (github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[CI-win]')) }}
         run: cargo nextest run
-  test-wasm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: swatinem/rust-cache@v2
-        with:
-          shared-key: "helixflow"
-      - name: "Set up Rust"
-        run: |
-          rustup show
-          rustup target add wasm32-unknown-unknown
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      # Need to run individually for each crate. See: https://github.com/rustwasm/wasm-pack/issues/642
-      - name: "Test helixflow-core"
-        run: |
-          cd helixflow-core
-          wasm-pack test --headless --chrome
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -75,6 +57,7 @@ jobs:
           rustup component add clippy
       - name: "Lint"
         run: cargo clippy
+
   fmt:
     runs-on: ubuntu-latest
     steps:

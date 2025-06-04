@@ -38,13 +38,3 @@ pub fn run_helixflow() {
     slint::run_event_loop().unwrap();
     helixflow.hide().unwrap();
 }
-
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen::prelude::wasm_bindgen(start)]
-pub fn wasm_start() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).expect("error initializing log");
-    debug!("Running helixflow in wasm");
-    // panic!("So long and thanks for all the fish")
-    run_helixflow();
-}
