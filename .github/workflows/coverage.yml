@@ -4,12 +4,18 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  RUSTC_BOOTSTRAP: "1"
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: "Set up Rust"
+        run: rustup show
 
       - name: Set up Just
         uses: extractions/setup-just@v2
