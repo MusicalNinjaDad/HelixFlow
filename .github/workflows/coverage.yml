@@ -24,6 +24,8 @@ jobs:
         with:
           tool: grcov
 
+      - uses: swatinem/rust-cache@v2
+
       - name: Run coverage via justfile
         run: just coverage
 
