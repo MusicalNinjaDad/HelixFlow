@@ -83,9 +83,11 @@ RUN umask 0002 \
 RUN umask 0002 \
 && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
 && cargo binstall --secure -y \
-    cargo-cyclonedx \        
+    cargo-cyclonedx \
     cargo-expand \
+    cargo-machete \
     cargo-nextest \
+    cargo-udeps \
     cargo-xwin \
     grcov \
     mdbook \
