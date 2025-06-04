@@ -386,16 +386,11 @@ impl Relate<Contains<TaskList, Task>> for TestBackend {
     }
 }
 
-
 #[cfg(test)]
 #[coverage(off)]
 mod tests {
-    use std::assert_matches::assert_matches;
-    use wasm_bindgen_test::*;
-
     use super::*;
-
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    use std::assert_matches::assert_matches;
 
     #[test]
     fn try_contains_oks() -> HelixFlowResult<()> {
@@ -450,7 +445,7 @@ mod tests {
         )
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_new_task() {
         let new_task = Task::new("Test Task", None);
         assert_eq!(new_task.name, "Test Task");
@@ -459,7 +454,7 @@ mod tests {
         assert_eq!(new_task.id.get_version(), Some(uuid::Version::SortRand));
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_new_task_blank() {
         let new_task = Task::new("", None);
         assert_eq!(new_task.name, "");
@@ -468,14 +463,14 @@ mod tests {
         assert_eq!(new_task.id.get_version(), Some(uuid::Version::SortRand));
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_create_task() {
         let new_task = Task::new("Test Task 1", None);
         let backend = TestBackend;
         new_task.create(&backend).unwrap();
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_failed_to_create_task() {
         let new_task = Task::new("FAIL", None);
         let backend = TestBackend;
@@ -483,7 +478,7 @@ mod tests {
         assert_matches!(err, HelixFlowError::BackendError(_))
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_mismatched_task_created() {
         let new_task = Task::new("MISMATCH", None);
         let backend = TestBackend;
@@ -497,7 +492,7 @@ mod tests {
         )
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_get_task() {
         let backend = TestBackend;
         let id = uuid!("0196b4c9-8447-7959-ae1f-72c7c8a3dd36");
@@ -509,10 +504,10 @@ mod tests {
                 id,
                 description: None
             }
-        )
+        );
     }
 
-    #[wasm_bindgen_test(unsupported = test)]
+    #[test]
     fn test_get_invalid_task() {
         let backend = TestBackend;
         let id = uuid!("0196b4c9-8447-78db-ae8a-be68a8095aa2");
