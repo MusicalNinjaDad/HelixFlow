@@ -5,7 +5,10 @@ on:
   workflow_dispatch:
 
 env:
+  CARGO_INCREMENTAL: "0"
   RUSTC_BOOTSTRAP: "1"
+  RUSTFLAGS: "-Cinstrument-coverage"
+  LLVM_PROFILE_FILE: "hf-%p-%m.profraw"
 
 permissions:
   id-token: write
@@ -36,6 +39,8 @@ jobs:
           tool: grcov
 
       - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "helixflow"
 
       - name: Run coverage via justfile
         run: just coverage
