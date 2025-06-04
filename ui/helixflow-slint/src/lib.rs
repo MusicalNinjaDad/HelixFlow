@@ -1,4 +1,5 @@
 #![feature(assert_matches)]
+#![feature(coverage_attribute)]
 
 slint::include_modules!();
 

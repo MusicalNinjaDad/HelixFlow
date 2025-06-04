@@ -1,4 +1,5 @@
-// LCOV_EXCL_START
+#![feature(coverage_attribute)]
+#![coverage(off)]
 use std::rc::Rc;
 
 use log::debug;

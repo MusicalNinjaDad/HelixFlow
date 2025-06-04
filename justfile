@@ -15,9 +15,6 @@ coverage-report:
         --ignore-not-existing \
         --ignore "**/tests/*" \
         --ignore "**/build.rs" \
-        --excl-line "// LCOV_EXCL_LINE" \
-        --excl-start "// LCOV_EXCL_START" \
-        --excl-stop "// LCOV_EXCL_STOP" \
         --output-path target/coverage
 
 serve-coverage:

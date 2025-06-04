@@ -171,8 +171,8 @@ where
     }
 }
 
-// LCOV_EXCL_START
 #[cfg(test)]
+#[coverage(off)]
 mod test_rs {
     use super::*;
 
@@ -233,10 +233,9 @@ mod test_rs {
         assert_eq!(slint_task, task.into());
     }
 }
-// LCOV_EXCL_STOP
 
-// LCOV_EXCL_START
 #[cfg(test)]
+#[coverage(off)]
 mod test_slint {
     use super::*;
     use crate::test::*;
@@ -414,4 +413,3 @@ mod test_slint {
         }
     }
 }
-// LCOV_EXCL_STOP

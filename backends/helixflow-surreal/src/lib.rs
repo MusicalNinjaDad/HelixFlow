@@ -1,4 +1,5 @@
 #![feature(assert_matches)]
+#![feature(coverage_attribute)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use std::{borrow::Cow, rc::Rc};
@@ -264,10 +265,11 @@ impl SurrealDb<Db> {
     }
 }
 
-// LCOV_EXCL_START
+
 /// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
 /// `block_on()` will not run either, as rt cannot be idle.
 #[cfg(test)]
+#[coverage(off)]
 mod tests {
 
     use std::assert_matches::assert_matches;
@@ -311,4 +313,3 @@ mod tests {
         }
     }
 }
-// LCOV_EXCL_STOP

@@ -386,8 +386,9 @@ impl Relate<Contains<TaskList, Task>> for TestBackend {
     }
 }
 
-// LCOV_EXCL_START
+
 #[cfg(test)]
+#[coverage(off)]
 mod tests {
     use std::assert_matches::assert_matches;
     use wasm_bindgen_test::*;
@@ -585,4 +586,3 @@ mod tests {
         )
     }
 }
-// LCOV_EXCL_STOP
