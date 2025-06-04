@@ -14,6 +14,5 @@ log.workspace = true
 slint.workspace = true
 
 [dev-dependencies]
-futures = "0.3.31"
 i-slint-backend-testing.workspace = true
 uuid.workspace = true
