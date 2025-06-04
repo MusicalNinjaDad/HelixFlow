@@ -10,7 +10,7 @@ coverage-report:
     grcov . \
         --binary-path ./target/debug/ \
         --source-dir . \
-        --output-type html \
+        --output-type html,lcov \
         --branch \
         --ignore-not-existing \
         --ignore "**/tests/*" \
@@ -24,9 +24,12 @@ serve-coverage:
 clean-cov:
     find . -type f -name '*.profraw' -delete
 
-cov:
+coverage:
     just clean-cov
     just build-cov
     just test-cov
     just coverage-report
+
+cov:
+    just coverage
     just serve-coverage
