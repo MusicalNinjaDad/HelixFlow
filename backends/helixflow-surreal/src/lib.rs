@@ -265,8 +265,8 @@ impl SurrealDb<Db> {
     }
 }
 
-/// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
-/// `block_on()` will not run either, as rt cannot be idle.
+// Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
+// `block_on()` will not run either, as rt cannot be idle.
 #[cfg(test)]
 #[coverage(off)]
 mod tests {
