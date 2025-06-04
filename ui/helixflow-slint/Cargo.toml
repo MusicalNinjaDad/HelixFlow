@@ -18,5 +18,4 @@ rstest.workspace = true
 uuid.workspace = true
 
 [build-dependencies]
-glob.workspace = true
 slint-build.workspace = true

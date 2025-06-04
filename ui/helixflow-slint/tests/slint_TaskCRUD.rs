@@ -6,8 +6,8 @@ use std::rc::Rc;
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global};
 
-use helixflow_core::task::{Task, blocking::TestBackend};
-use helixflow_slint::{CurrentTask, HelixFlow, task::blocking::create_task, test::*};
+use helixflow_core::task::{Task, TestBackend};
+use helixflow_slint::{CurrentTask, HelixFlow, task::create_task, test::*};
 
 #[test]
 fn test_set_task_id() {

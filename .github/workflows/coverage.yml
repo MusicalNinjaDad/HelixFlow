@@ -1,0 +1,52 @@
+name: Coverage
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_INCREMENTAL: "0"
+  RUSTC_BOOTSTRAP: "1"
+  RUSTFLAGS: "-Cinstrument-coverage"
+  LLVM_PROFILE_FILE: "hf-%p-%m.profraw"
+
+permissions:
+  id-token: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: "Set up Rust"
+        run: |
+          rustup show
+          rustup component add llvm-tools llvm-tools-preview
+
+      - name: Set up Just
+        uses: extractions/setup-just@v2
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      - name: Install grcov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: grcov
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "helixflow"
+
+      - name: Run coverage via justfile
+        run: just coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          files: target/coverage/lcov

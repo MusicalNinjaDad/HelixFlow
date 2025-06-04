@@ -5,6 +5,7 @@ on:
   pull_request:
 
 env:
+  CARGO_INCREMENTAL: "0"
   RUSTC_BOOTSTRAP: "1"
 
 jobs:
@@ -16,12 +17,12 @@ jobs:
           # windows-latest,
         ]
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
         if: ${{ runner.os != 'Windows' }}
+        with:
+          shared-key: "helixflow"
       - name: Cache cargo registry and build
         if: ${{ runner.os == 'Windows' }}
         uses: actions/cache@v4
@@ -46,8 +47,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "helixflow"
       - name: "Set up Rust"
-        run: rustup show
+        run: |
+          rustup show
+          rustup target add wasm32-unknown-unknown
       - name: Install wasm-pack
         uses: taiki-e/install-action@v2
         with:
@@ -62,16 +67,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "helixflow"
       - name: "Set up Rust"
-        run: rustup show
+        run: |
+          rustup show
+          rustup component add clippy
       - name: "Lint"
         run: cargo clippy
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: swatinem/rust-cache@v2
       - name: "Set up Rust"
-        run: rustup show
+        run: |
+          rustup show
+          rustup component add rustfmt
       - name: "Check formatting"
         run: cargo fmt

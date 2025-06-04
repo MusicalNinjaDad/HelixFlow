@@ -1,7 +1,13 @@
-use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
-use slint::{Global, ModelRc, SharedString, ToSharedString};
 use std::{fmt::Display, rc::Weak};
+
 use uuid::Uuid;
+
+use slint::{ComponentHandle, VecModel};
+use slint::{Global, ModelRc, SharedString, ToSharedString};
+
+use helixflow_core::task::{
+    CRUD, Contains, HelixFlowError, HelixFlowResult, Link, Linkable, Relate, Store, Task, TaskList,
+};
 
 use crate::{Backlog, CurrentTask, HelixFlow, SlintTask, SlintTaskList};
 
@@ -92,89 +98,81 @@ impl BacklogSignature for HelixFlow {
     }
 }
 
-pub mod blocking {
-    use super::*;
-    use helixflow_core::task::{
-        Contains, TaskList,
-        blocking::{CRUD, Link, Linkable, Relate, Store},
-    };
-    use slint::{ComponentHandle, ModelRc, VecModel};
-
-    pub fn create_task<BKEND>(
-        helixflow: slint::Weak<HelixFlow>,
-        backend: Weak<BKEND>,
-    ) -> impl FnMut() + 'static
-    where
-        BKEND: Store<Task> + 'static,
-    {
-        move || {
-            let helixflow = helixflow.unwrap();
-            let backend = backend.upgrade().unwrap();
-            helixflow.set_create_enabled(false);
-            let task_name: String = helixflow.get_task_name().into();
-            let task = Task::new(task_name, None);
-            task.create(backend.as_ref()).unwrap();
-            CurrentTask::get(&helixflow).set_task(task.into());
-            helixflow.set_create_enabled(true);
-        }
+pub fn create_task<BKEND>(
+    helixflow: slint::Weak<HelixFlow>,
+    backend: Weak<BKEND>,
+) -> impl FnMut() + 'static
+where
+    BKEND: Store<Task> + 'static,
+{
+    move || {
+        let helixflow = helixflow.unwrap();
+        let backend = backend.upgrade().unwrap();
+        helixflow.set_create_enabled(false);
+        let task_name: String = helixflow.get_task_name().into();
+        let task = Task::new(task_name, None);
+        task.create(backend.as_ref()).unwrap();
+        CurrentTask::get(&helixflow).set_task(task.into());
+        helixflow.set_create_enabled(true);
     }
+}
 
-    #[allow(private_bounds)] // BacklogSignature hack is private & should only be impl'd here ...
-    pub fn load_backlog<ROOT, BKEND>(
-        root_component: slint::Weak<ROOT>,
-        backend: Weak<BKEND>,
-    ) -> impl FnMut() + 'static
-    where
-        BKEND: Relate<Contains<TaskList, Task>> + 'static,
-        ROOT: ComponentHandle + BacklogSignature + 'static,
-    {
-        move || {
-            let root_component = root_component.unwrap();
-            let backend = backend.upgrade().unwrap();
-            let tasklist = root_component.get_tasklist();
-            let tl = TaskList::try_from(tasklist).unwrap();
-            let backlog_entries: VecModel<SlintTask> = tl
-                .get_linked_items(backend.as_ref())
-                .unwrap()
-                .map(|task| task.right.unwrap().into())
-                .collect();
-            root_component.set_tasks(ModelRc::new(backlog_entries));
-        }
+#[allow(private_bounds)] // BacklogSignature hack is private & should only be impl'd here ...
+pub fn load_backlog<ROOT, BKEND>(
+    root_component: slint::Weak<ROOT>,
+    backend: Weak<BKEND>,
+) -> impl FnMut() + 'static
+where
+    BKEND: Relate<Contains<TaskList, Task>> + 'static,
+    ROOT: ComponentHandle + BacklogSignature + 'static,
+{
+    move || {
+        let root_component = root_component.unwrap();
+        let backend = backend.upgrade().unwrap();
+        let tasklist = root_component.get_tasklist();
+        let tl = TaskList::try_from(tasklist).unwrap();
+        let backlog_entries: VecModel<SlintTask> = tl
+            .get_linked_items(backend.as_ref())
+            .unwrap()
+            .map(|task| task.right.unwrap().into())
+            .collect();
+        root_component.set_tasks(ModelRc::new(backlog_entries));
     }
+}
 
-    #[allow(private_bounds)] // BacklogSignature hack is private & should only be impl'd here ...
-    pub fn create_task_in_backlog<ROOT, BKEND>(
-        root_component: slint::Weak<ROOT>,
-        backend: Weak<BKEND>,
-    ) -> impl FnMut(SlintTask) + 'static
-    where
-        BKEND: Relate<Contains<TaskList, Task>> + 'static,
-        ROOT: ComponentHandle + BacklogSignature + 'static,
-    {
-        move |slinttask| {
-            let root_component = root_component.upgrade().unwrap();
-            let backend = backend.upgrade().unwrap();
+#[allow(private_bounds)] // BacklogSignature hack is private & should only be impl'd here ...
+pub fn create_task_in_backlog<ROOT, BKEND>(
+    root_component: slint::Weak<ROOT>,
+    backend: Weak<BKEND>,
+) -> impl FnMut(SlintTask) + 'static
+where
+    BKEND: Relate<Contains<TaskList, Task>> + 'static,
+    ROOT: ComponentHandle + BacklogSignature + 'static,
+{
+    move |slinttask| {
+        let root_component = root_component.upgrade().unwrap();
+        let backend = backend.upgrade().unwrap();
 
-            let backlog: TaskList = root_component.get_tasklist().try_into().unwrap();
-            let task: Task = slinttask.try_into().unwrap();
+        let backlog: TaskList = root_component.get_tasklist().try_into().unwrap();
+        let task: Task = slinttask.try_into().unwrap();
 
-            backlog
-                .link(&task)
-                .create_linked_item(backend.as_ref())
-                .unwrap();
-            let backlog_entries: VecModel<SlintTask> = backlog
-                .get_linked_items(backend.as_ref())
-                .unwrap()
-                .map(|link| link.right)
-                .map(Result::unwrap)
-                .map(Into::into)
-                .collect();
-            root_component.set_tasks(ModelRc::new(backlog_entries));
-        }
+        backlog
+            .link(&task)
+            .create_linked_item(backend.as_ref())
+            .unwrap();
+        let backlog_entries: VecModel<SlintTask> = backlog
+            .get_linked_items(backend.as_ref())
+            .unwrap()
+            .map(|link| link.right)
+            .map(Result::unwrap)
+            .map(Into::into)
+            .collect();
+        root_component.set_tasks(ModelRc::new(backlog_entries));
     }
 }
 
 #[cfg(test)]
+#[coverage(off)]
 mod test_rs {
     use super::*;
 
@@ -237,6 +235,7 @@ mod test_rs {
 }
 
 #[cfg(test)]
+#[coverage(off)]
 mod test_slint {
     use super::*;
     use crate::test::*;

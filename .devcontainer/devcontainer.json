@@ -28,7 +28,9 @@
                 "DavidAnson.vscode-markdownlint",
                 "tamasfe.even-better-toml",
                 // Docker (for devcontainer DockerFile)
-                "ms-azuretools.vscode-containers"
+                "ms-azuretools.vscode-containers",
+                // Coverage
+                "codecov.codecov"
             ],
             "settings": {
                 // rust
