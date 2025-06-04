@@ -90,8 +90,7 @@ RUN umask 0002 \
     cargo-xwin \
     grcov \
     mdbook \
-    miniserve \
-    wasm-pack
+    miniserve
 
 RUN umask 0002 \
 && cat <<EOF >> ${CARGO_HOME}/config.toml
@@ -113,10 +112,6 @@ RUN dnf install -y \
     libinput \
     wayland-devel \
     xorg-x11-server-Xwayland
-
-# Chromium for headless wasm testing
-RUN dnf install -y \
-    chromium
 
 # ---
 # Final setup steps
