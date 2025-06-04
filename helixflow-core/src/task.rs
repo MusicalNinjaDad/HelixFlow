@@ -387,7 +387,7 @@ impl Relate<Contains<TaskList, Task>> for TestBackend {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use std::assert_matches::assert_matches;
     use wasm_bindgen_test::*;
 
