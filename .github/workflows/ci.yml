@@ -18,16 +18,13 @@ jobs:
         ]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Skip windows unless `[CI-win]` is in the commit message (or this is a PR)
-        if: ${{ runner.os == 'Windows' }} && !contains(github.event.head_commit.message, '[CI-win]')
-        run: exit 1
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
         if: ${{ runner.os != 'Windows' }}
         with:
           shared-key: "helixflow"
       - name: Cache cargo registry and build
-        if: ${{ runner.os == 'Windows' }}
+        if: ${{ runner.os == 'Windows' && (github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[CI-win]')) }}
         uses: actions/cache@v4
         with:
           path: |
@@ -44,6 +41,7 @@ jobs:
         with:
           tool: cargo-nextest
       - name: "Test"
+        if: ${{ runner.os != 'Windows' || (github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[CI-win]')) }}
         run: cargo nextest run
 
   lint:
