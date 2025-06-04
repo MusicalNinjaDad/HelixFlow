@@ -14,10 +14,13 @@ jobs:
       matrix:
         os: [
           ubuntu-latest, 
-          # windows-latest,
+          windows-latest,
         ]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Skip windows unless `[CI-win]` is in the commit message (or this is a PR)
+        if: ${{ runner.os == 'Windows' }} && !contains(github.event.head_commit.message, '[CI-win]')
+        run: exit 1
       - uses: actions/checkout@v4
       - uses: swatinem/rust-cache@v2
         if: ${{ runner.os != 'Windows' }}
