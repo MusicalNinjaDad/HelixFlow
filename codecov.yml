@@ -1,0 +1,34 @@
+coverage:
+  range: 95..100
+  precision: 2
+  round: down
+  status:
+    patch:
+      default:
+        only_pulls: true
+        threshold: 100%
+        if_not_found: failure
+
+comment:
+  layout: "condensed_header, components, condensed_footer"
+  behavior: default
+  require_changes: false
+
+component_management:
+  individual_components:
+    - component_id: core
+      name: helixflow-core
+      paths:
+        - helixflow-core/**
+    - component_id: app
+      name: helixflow-app
+      paths:
+        - helixflow/**
+    - component_id: ui-slint
+      name: ui-slint
+      paths:
+        - ui-slint/**
+    - component_id: backend-surreal
+      name: backend-surreal
+      paths:
+        - backends-surreal/**
