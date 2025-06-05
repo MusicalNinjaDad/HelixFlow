@@ -28,8 +28,10 @@ jobs:
           rustup show
           rustup component add llvm-tools llvm-tools-preview
 
-      - name: Set up Just
-        uses: extractions/setup-just@v2
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
