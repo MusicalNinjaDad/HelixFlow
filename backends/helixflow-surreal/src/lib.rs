@@ -2,7 +2,7 @@
 #![feature(coverage_attribute)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
-use std::{borrow::Cow, fs::File, path::PathBuf, rc::Rc};
+use std::{borrow::Cow, path::PathBuf, rc::Rc};
 
 use anyhow::Context;
 use log::debug;
@@ -319,8 +319,7 @@ mod tests {
         backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
     }
 
-    #[rstest]
-    #[case(in_memory_backend)]
+    #[apply(test_backends)]
     fn test_new_task_written_to_db<F>(#[case] backend: F)
     where
         F: FnOnce() -> SurrealDb<Db>,
@@ -334,8 +333,7 @@ mod tests {
         }
     }
 
-    #[rstest]
-    #[case(in_memory_backend)]
+    #[apply(test_backends)]
     fn test_get_not_found<F>(#[case] backend: F)
     where
         F: FnOnce() -> SurrealDb<Db>,
