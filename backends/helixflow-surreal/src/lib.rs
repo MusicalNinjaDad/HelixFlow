@@ -2,7 +2,7 @@
 #![feature(coverage_attribute)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
-use std::{borrow::Cow, fs::File, rc::Rc};
+use std::{borrow::Cow, fs::File, path::PathBuf, rc::Rc};
 
 use anyhow::Context;
 use log::debug;
@@ -111,7 +111,7 @@ pub struct SurrealDb<C: Connection> {
     rt: Rc<tokio::runtime::Runtime>,
 
     /// A file where the data will be persisted
-    file: File,
+    directory: Option<PathBuf>,
 }
 
 impl<C: Connection> Store<Task> for SurrealDb<C> {
@@ -245,11 +245,14 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
     }
 }
 
-/// Instantiate an in-memory Db, with data saved to `file`
-/// `ns` & `db` = "HelixFlow"
-/// This is a blocking operation until the db is available.
 impl SurrealDb<Db> {
-    pub fn new(file: File) -> anyhow::Result<Self> {
+    /// Instantiate an local Db, with data saved in a rocksdb in `directory`,
+    /// or simply held in memory (`None`).
+    ///
+    /// Note:
+    /// - `ns` & `db` = "HelixFlow"
+    /// - This is a blocking operation until the db is available.
+    pub fn new(directory: Option<PathBuf>) -> anyhow::Result<Self> {
         debug!("Initialising tokio runtime");
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -268,7 +271,7 @@ impl SurrealDb<Db> {
         Ok(Self {
             db,
             rt: runtime,
-            file,
+            directory,
         })
     }
 }
@@ -283,27 +286,40 @@ mod tests {
     use super::*;
 
     use rstest::*;
-    use tempfile::tempfile;
+    use tempfile::tempdir;
 
-    #[fixture]
-    fn file() -> File {
-        tempfile().unwrap()
+    fn in_memory_backend() -> SurrealDb<Db> {
+        SurrealDb::new(None).unwrap()
+    }
+
+    fn rocks_backend() -> SurrealDb<Db> {
+        let location = tempdir().unwrap().path().to_path_buf();
+        SurrealDb::new(Some(location)).unwrap()
+    }
+
+
+
+    #[rstest]
+    #[case(in_memory_backend)]
+    #[case(rocks_backend)]
+    fn test_new_task_in_new_file<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
+        let new_task = Task::new("Test Task 1", None);
+        let backend = backend();
+        backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
     }
 
     #[rstest]
-    fn test_new_task_in_new_file(file: File) {
-        {
-            let new_task = Task::new("Test Task 1", None);
-            let backend = SurrealDb::new(file).unwrap();
-            backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-        }
-    }
-
-    #[rstest]
-    fn test_new_task_written_to_db(file: File) {
+    #[case(in_memory_backend)]
+    fn test_new_task_written_to_db<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
         {
             let new_task = Task::new("Test Task 2", None);
-            let backend = SurrealDb::new(file).unwrap();
+            let backend = backend();
             backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
             let stored_task: Task = backend.get(&new_task.id).unwrap();
             assert_eq!(stored_task, new_task);
@@ -311,17 +327,19 @@ mod tests {
     }
 
     #[rstest]
-    fn test_get_not_found(file: File) {
-        {
-            let backend = SurrealDb::new(file).unwrap();
-            let id = Uuid::now_v7();
-            let res: HelixFlowResult<Task> = backend.get(&id);
-            let err = res.unwrap_err();
-            assert_matches!(
-                err,
-                HelixFlowError::NotFound { itemtype, id: errid }
-                if itemtype == "Task" && errid == id
-            );
-        }
+    #[case(in_memory_backend)]
+    fn test_get_not_found<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
+        let backend = backend();
+        let id = Uuid::now_v7();
+        let res: HelixFlowResult<Task> = backend.get(&id);
+        let err = res.unwrap_err();
+        assert_matches!(
+            err,
+            HelixFlowError::NotFound { itemtype, id: errid }
+            if itemtype == "Task" && errid == id
+        );
     }
 }
