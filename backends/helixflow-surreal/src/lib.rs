@@ -319,8 +319,8 @@ mod tests {
             let err = res.unwrap_err();
             assert_matches!(
                 err,
-                HelixFlowError::NotFound { itemtype, id }
-                if itemtype == "Task" && id == id
+                HelixFlowError::NotFound { itemtype, id: errid }
+                if itemtype == "Task" && errid == id
             );
         }
     }
