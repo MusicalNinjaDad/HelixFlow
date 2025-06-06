@@ -4,7 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    versioning-strategy: increase
+    # docs specify `increase` & `increase_if_necessary `but code appears to use this:
+    # https://github.com/dependabot/dependabot-core/blob/1195171bbe99c15b926f75478820c9e22763fd0a/common/lib/dependabot/requirements_update_strategy.rb#L7
+    # https://github.com/dependabot/dependabot-core/blob/1195171bbe99c15b926f75478820c9e22763fd0a/cargo/spec/dependabot/cargo/update_checker/requirements_updater_spec.rb#L85
+    versioning-strategy: bump_versions 
   - package-ecosystem: "docker"
     directory: "/.devcontainer/"
     schedule:
