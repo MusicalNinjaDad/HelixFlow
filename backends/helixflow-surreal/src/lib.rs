@@ -286,6 +286,8 @@ mod tests {
     use super::*;
 
     use rstest::*;
+    use rstest_reuse::*;
+
     use tempfile::tempdir;
 
     fn in_memory_backend() -> SurrealDb<Db> {
@@ -297,12 +299,18 @@ mod tests {
         SurrealDb::new(Some(location)).unwrap()
     }
 
-
-
+    #[template]
     #[rstest]
     #[case(in_memory_backend)]
     #[case(rocks_backend)]
-    fn test_new_task_in_new_file<F>(#[case] backend: F)
+    fn test_backends<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
+    }
+
+    #[apply(test_backends)]
+    fn test_new_task<F>(#[case] backend: F)
     where
         F: FnOnce() -> SurrealDb<Db>,
     {
