@@ -301,8 +301,8 @@ mod tests {
 
     #[template]
     #[rstest]
-    #[case(in_memory_backend)]
-    #[case(rocks_backend)]
+    #[case::mem(in_memory_backend)]
+    #[case::rocks(rocks_backend)]
     fn test_backends<F>(#[case] backend: F)
     where
         F: FnOnce() -> SurrealDb<Db>,
