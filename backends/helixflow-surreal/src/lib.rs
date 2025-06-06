@@ -100,7 +100,7 @@ use helixflow_core::task::{Contains, Relate, Store};
 /// on the type of `<C: Connection>` selected. See the unit tests for an example of instantiating
 /// an in-memory Db.
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SurrealDb<C: Connection> {
     /// The instatiated Surreal Db `Connection`. This should be in an authenticated state with
     /// `namespace` & `database` already selected, so that functions such as `create()` can be
@@ -109,6 +109,9 @@ pub struct SurrealDb<C: Connection> {
 
     /// A dedicated tokio runtime to allow for blocking operations
     rt: Rc<tokio::runtime::Runtime>,
+
+    /// A file where the data will be persisted
+    file: File,
 }
 
 impl<C: Connection> Store<Task> for SurrealDb<C> {
@@ -262,7 +265,11 @@ impl SurrealDb<Db> {
         debug!("Stuffing the runtime in an Rc");
         let runtime = Rc::new(rt);
         debug!("Done connecting to database");
-        Ok(Self { db, rt: runtime })
+        Ok(Self {
+            db,
+            rt: runtime,
+            file,
+        })
     }
 }
 
