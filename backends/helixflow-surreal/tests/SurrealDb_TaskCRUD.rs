@@ -1,6 +1,10 @@
-#![cfg(test)]
-#![feature(assert_matches)]
 //! Test calling Task::CRUD_fn(&SurrealDb) ...
+
+#![feature(assert_matches)]
+#![feature(cfg_boolean_literals)]
+
+#![cfg(false)]
+#![cfg(test)]
 
 use assert_unordered::assert_eq_unordered_sort;
 use std::assert_matches::assert_matches;

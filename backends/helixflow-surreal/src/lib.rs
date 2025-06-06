@@ -2,7 +2,7 @@
 #![feature(coverage_attribute)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
-use std::{borrow::Cow, rc::Rc};
+use std::{borrow::Cow, fs::File, rc::Rc};
 
 use anyhow::Context;
 use log::debug;
@@ -242,10 +242,11 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
     }
 }
 
-/// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
+/// Instantiate an in-memory Db, with data saved to `file`
+/// `ns` & `db` = "HelixFlow"
 /// This is a blocking operation until the db is available.
 impl SurrealDb<Db> {
-    pub fn new() -> anyhow::Result<Self> {
+    pub fn new(file: File) -> anyhow::Result<Self> {
         debug!("Initialising tokio runtime");
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -274,30 +275,38 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_new_task() {
+    use rstest::*;
+    use tempfile::tempfile;
+
+    #[fixture]
+    fn file() -> File {
+        tempfile().unwrap()
+    }
+
+    #[rstest]
+    fn test_new_task_in_new_file(file: File) {
         {
             let new_task = Task::new("Test Task 1", None);
-            let backend = SurrealDb::new().unwrap();
+            let backend = SurrealDb::new(file).unwrap();
             backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
         }
     }
 
-    #[test]
-    fn test_new_task_written_to_db() {
+    #[rstest]
+    fn test_new_task_written_to_db(file: File) {
         {
             let new_task = Task::new("Test Task 2", None);
-            let backend = SurrealDb::new().unwrap();
+            let backend = SurrealDb::new(file).unwrap();
             backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
             let stored_task: Task = backend.get(&new_task.id).unwrap();
             assert_eq!(stored_task, new_task);
         }
     }
 
-    #[test]
-    fn test_get_not_found() {
+    #[rstest]
+    fn test_get_not_found(file: File) {
         {
-            let backend = SurrealDb::new().unwrap();
+            let backend = SurrealDb::new(file).unwrap();
             let id = Uuid::now_v7();
             let res: HelixFlowResult<Task> = backend.get(&id);
             let err = res.unwrap_err();
