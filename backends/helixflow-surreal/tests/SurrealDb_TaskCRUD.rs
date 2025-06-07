@@ -17,7 +17,7 @@ use helixflow_surreal::SurrealDb;
 fn test_create() {
     {
         let new_task = Task::new("Test Task 2", None);
-        let backend = SurrealDb::new().unwrap();
+        let backend = SurrealDb::new(None).unwrap();
         new_task.create(&backend).unwrap();
     }
 }
@@ -26,7 +26,7 @@ fn test_create() {
 fn test_create_then_get() {
     {
         let new_task = Task::new("Test Task 2", None);
-        let backend = SurrealDb::new().unwrap();
+        let backend = SurrealDb::new(None).unwrap();
         new_task.create(&backend).unwrap();
         let stored_task = Task::get(&backend, &new_task.id).unwrap();
         assert_eq!(stored_task, new_task);
@@ -36,7 +36,7 @@ fn test_create_then_get() {
 #[test]
 fn test_get_not_found() {
     {
-        let backend = SurrealDb::new().unwrap();
+        let backend = SurrealDb::new(None).unwrap();
         let id = Uuid::now_v7();
         let err = Task::get(&backend, &id).unwrap_err();
         assert_matches!(
@@ -49,7 +49,7 @@ fn test_get_not_found() {
 
 #[test]
 fn create_tasklist() {
-    let backend = SurrealDb::new().unwrap();
+    let backend = SurrealDb::new(None).unwrap();
     let tasklist = TaskList::new("Test tasklist");
     tasklist.create(&backend).unwrap();
     let stored_tasklist = TaskList::get(&backend, &tasklist.id).unwrap();
@@ -58,7 +58,7 @@ fn create_tasklist() {
 
 #[test]
 fn create_task_in_tasklist() {
-    let backend = SurrealDb::new().unwrap();
+    let backend = SurrealDb::new(None).unwrap();
     let tasklist = TaskList::new("Test tasklist");
     tasklist.create(&backend).unwrap();
     let task = Task::new("Test Task 2", None);
@@ -74,7 +74,7 @@ fn create_task_in_tasklist() {
 
 #[test]
 fn create_two_tasks_in_tasklist() {
-    let backend = SurrealDb::new().unwrap();
+    let backend = SurrealDb::new(None).unwrap();
     let tasklist = TaskList::new("Test tasklist");
     tasklist.create(&backend).unwrap();
     let task2 = Task::new("Test Task 2", None);
