@@ -1,6 +1,6 @@
 #![feature(coverage_attribute)]
 #![coverage(off)]
-use std::rc::Rc;
+use std::{path::PathBuf, rc::Rc};
 
 use log::debug;
 use slint::ComponentHandle;
@@ -14,7 +14,9 @@ use helixflow_surreal::SurrealDb;
 
 pub fn run_helixflow() {
     debug!("Starting HelixFlow...");
-    let backend = Rc::new(SurrealDb::new().unwrap());
+    let mut db_file = PathBuf::new();
+    db_file.push("helixflow.kv");
+    let backend = Rc::new(SurrealDb::new(Some(db_file)).unwrap());
     // let backend = Rc::new(SurrealDb::connect("127.0.0.1:8010").unwrap());
     let helixflow = HelixFlow::new().unwrap();
     let hf = helixflow.as_weak();
