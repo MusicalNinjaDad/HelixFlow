@@ -1,5 +1,6 @@
 #![feature(assert_matches)]
 #![feature(coverage_attribute)]
+#![feature(let_chains)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use std::{borrow::Cow, error::Error, path::PathBuf, rc::Rc};
@@ -268,17 +269,17 @@ impl SurrealDb<Db> {
             .context("Selecting database namespace")?;
         if let Some(file) = &file {
             let imported = rt.block_on(db.import(file).into_future());
-            if let Err(e) = imported {
-                if let surrealdb::Error::Api(Api::FileOpen { error, .. }) = &e {
-                    if error.kind() == std::io::ErrorKind::NotFound {
-                        // Ignore missing file
-                    } else {
-                        return Err(e).context(format!("Importing {file:?}"));
-                    }
-                } else {
-                    return Err(e).context(format!("Importing {file:?}"));
-                }
+
+            if let Err(e) = &imported
+                && let surrealdb::Error::Api(Api::FileOpen { error, path }) = e
+                && error.kind() == std::io::ErrorKind::NotFound
+                && path == file
+            {
+                Ok(())
+            } else {
+                imported
             }
+            .context(format!("Importing {:#?}", file))?
         }
         debug!("Stuffing the runtime in an Rc");
         let runtime = Rc::new(rt);
