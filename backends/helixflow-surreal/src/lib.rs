@@ -111,7 +111,7 @@ pub struct SurrealDb<C: Connection> {
     rt: Rc<tokio::runtime::Runtime>,
 
     /// A file where the data will be persisted
-    directory: Option<PathBuf>,
+    file: Option<PathBuf>,
 }
 
 impl<C: Connection> Store<Task> for SurrealDb<C> {
@@ -252,7 +252,7 @@ impl SurrealDb<Db> {
     /// Note:
     /// - `ns` & `db` = "HelixFlow"
     /// - This is a blocking operation until the db is available.
-    pub fn new(directory: Option<PathBuf>) -> anyhow::Result<Self> {
+    pub fn new(file: Option<PathBuf>) -> anyhow::Result<Self> {
         debug!("Initialising tokio runtime");
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -271,7 +271,7 @@ impl SurrealDb<Db> {
         Ok(Self {
             db,
             rt: runtime,
-            directory,
+            file,
         })
     }
 }
@@ -288,21 +288,21 @@ mod tests {
     use rstest::*;
     use rstest_reuse::*;
 
-    use tempfile::tempdir;
+    use tempfile::NamedTempFile;
 
-    fn in_memory_backend() -> SurrealDb<Db> {
+    fn no_file() -> SurrealDb<Db> {
         SurrealDb::new(None).unwrap()
     }
 
-    fn rocks_backend() -> SurrealDb<Db> {
-        let location = tempdir().unwrap().path().to_path_buf();
+    fn save_to_file() -> SurrealDb<Db> {
+        let location = NamedTempFile::new().unwrap().path().into();
         SurrealDb::new(Some(location)).unwrap()
     }
 
     #[template]
     #[rstest]
-    #[case::mem(in_memory_backend)]
-    #[case::rocks(rocks_backend)]
+    #[case::mem(no_file)]
+    #[case::save(save_to_file)]
     fn test_backends<F>(#[case] backend: F)
     where
         F: FnOnce() -> SurrealDb<Db>,
