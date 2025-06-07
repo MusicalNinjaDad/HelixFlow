@@ -302,6 +302,7 @@ where
             self.rt
                 .block_on(self.db.export(file).into_future())
                 .unwrap()
+                // TODO - handle errors nicely
         }
     }
 }
