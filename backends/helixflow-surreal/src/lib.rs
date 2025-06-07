@@ -2,7 +2,7 @@
 #![feature(coverage_attribute)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
-use std::{borrow::Cow, path::PathBuf, rc::Rc};
+use std::{borrow::Cow, error::Error, path::PathBuf, rc::Rc};
 
 use anyhow::Context;
 use log::debug;
@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use surrealdb::{
     Connection, Surreal, Uuid,
     engine::local::{Db, Mem},
+    error::Api,
     sql::{Id, Thing},
 };
 
@@ -265,6 +266,20 @@ impl SurrealDb<Db> {
         debug!("Selecting database namespace");
         rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
             .context("Selecting database namespace")?;
+        if let Some(file) = &file {
+            let imported = rt.block_on(db.import(file).into_future());
+            if let Err(e) = imported {
+                if let surrealdb::Error::Api(Api::FileOpen { error, .. }) = &e {
+                    if error.kind() == std::io::ErrorKind::NotFound {
+                        // Ignore missing file
+                    } else {
+                        return Err(e).context(format!("Importing {file:?}"));
+                    }
+                } else {
+                    return Err(e).context(format!("Importing {file:?}"));
+                }
+            }
+        }
         debug!("Stuffing the runtime in an Rc");
         let runtime = Rc::new(rt);
         debug!("Done connecting to database");
