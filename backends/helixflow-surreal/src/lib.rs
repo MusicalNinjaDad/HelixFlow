@@ -3,7 +3,7 @@
 #![feature(let_chains)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
-use std::{borrow::Cow, error::Error, path::PathBuf, rc::Rc};
+use std::{borrow::Cow, path::PathBuf, rc::Rc};
 
 use anyhow::Context;
 use log::debug;
