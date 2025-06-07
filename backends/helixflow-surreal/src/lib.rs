@@ -276,6 +276,20 @@ impl SurrealDb<Db> {
     }
 }
 
+impl<C> Drop for SurrealDb<C>
+where
+    C: Connection,
+{
+    fn drop(&mut self) {
+        if let Some(file) = &self.file {
+            println!("Saving to {:#?}", file);
+            self.rt
+                .block_on(self.db.export(file).into_future())
+                .unwrap()
+        }
+    }
+}
+
 // Can't run blocking on wasm as `runtime::Builder::enable_all()` needs `time` AND
 // `block_on()` will not run either, as rt cannot be idle.
 #[cfg(test)]
