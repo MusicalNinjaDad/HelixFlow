@@ -348,4 +348,21 @@ mod tests {
             if itemtype == "Task" && errid == id
         );
     }
+
+    #[test]
+    fn test_save_and_load() {
+        let location = NamedTempFile::new().unwrap();
+        let new_task = Task::new("Test Task 1", None);
+
+        let file = location.path().to_path_buf();
+        {
+            let backend1 = SurrealDb::new(Some(file)).unwrap();
+            backend1.create(&new_task).unwrap();
+        } // backend1 destructor should store task in file
+
+        let file = location.path().to_path_buf();
+        let backend2 = SurrealDb::new(Some(file)).unwrap();
+        let stored_task: Task = backend2.get(&new_task.id).unwrap();
+        assert_eq!(stored_task, new_task);
+    }
 }
