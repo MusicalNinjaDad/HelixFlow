@@ -82,6 +82,11 @@ pub struct Contains<LEFT, RIGHT> {
     pub right: HelixFlowResult<RIGHT>,
 }
 
+impl Relationship for Contains<TaskList, Task> {
+    type Left = TaskList;
+    type Right = Task;
+}
+
 impl<LEFT, RIGHT> Try for Contains<LEFT, RIGHT>
 where
     Contains<LEFT, RIGHT>: Relationship,
@@ -127,11 +132,6 @@ where
             },
         })
     }
-}
-
-impl Relationship for Contains<TaskList, Task> {
-    type Left = TaskList;
-    type Right = Task;
 }
 
 impl<LEFT, RIGHT> Link for Contains<LEFT, RIGHT>
