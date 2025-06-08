@@ -10,14 +10,7 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use uuid::{Uuid, uuid};
 
-/// Marker trait for our data items
-pub trait HelixFlowItem
-where
-    // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
-    Self: std::fmt::Debug + Send + Sync + 'static + Any,
-{
-    fn as_any(&self) -> &dyn Any;
-}
+use crate::HelixFlowItem;
 
 impl HelixFlowItem for Task {
     fn as_any(&self) -> &dyn Any {
