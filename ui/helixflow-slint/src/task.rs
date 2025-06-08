@@ -5,8 +5,9 @@ use uuid::Uuid;
 use slint::{ComponentHandle, VecModel};
 use slint::{Global, ModelRc, SharedString, ToSharedString};
 
-use helixflow_core::task::{
-    CRUD, Contains, HelixFlowError, HelixFlowResult, Link, Linkable, Relate, Store, Task, TaskList,
+use helixflow_core::{
+    HelixFlowError, HelixFlowResult,
+    task::{CRUD, Contains, Link, Linkable, Relate, Store, Task, TaskList},
 };
 
 use crate::{Backlog, CurrentTask, HelixFlow, SlintTask, SlintTaskList};

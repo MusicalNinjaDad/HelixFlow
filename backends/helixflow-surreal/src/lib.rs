@@ -15,7 +15,10 @@ use surrealdb::{
     sql::{Id, Thing},
 };
 
-use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
+use helixflow_core::{
+    HelixFlowError, HelixFlowResult,
+    task::{Task, TaskList},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 /// SurrealDb returns a `Thing` as `id`.

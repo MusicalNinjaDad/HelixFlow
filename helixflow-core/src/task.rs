@@ -10,7 +10,7 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use uuid::{Uuid, uuid};
 
-use crate::HelixFlowItem;
+use crate::{HelixFlowError, HelixFlowItem, HelixFlowResult};
 
 impl HelixFlowItem for Task {
     fn as_any(&self) -> &dyn Any {
@@ -150,33 +150,6 @@ where
         })
     }
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum HelixFlowError {
-    // The #[from] anyhow::Error will convert anything that offers `into anyhow::Error`.
-    #[error("backend error: {0}")]
-    BackendError(#[from] anyhow::Error),
-
-    #[error("created item does not match expectations: expected {expected:?}, got {actual:?}")]
-    Mismatch {
-        expected: Box<dyn HelixFlowItem>,
-        actual: Box<dyn HelixFlowItem>,
-    },
-
-    #[error("task id ({id:?}) is not a valid UUID v7")]
-    InvalidID { id: String },
-
-    #[error("404 No {itemtype} found with id {id}")]
-    NotFound { itemtype: String, id: Uuid },
-
-    #[error("Relationship between {left:?} and {right:?} contains Errors")]
-    RelationshipBetweenErrors {
-        left: Box<HelixFlowResult<Box<dyn HelixFlowItem>>>,
-        right: Box<HelixFlowResult<Box<dyn HelixFlowItem>>>,
-    },
-}
-
-pub type HelixFlowResult<T> = std::result::Result<T, HelixFlowError>;
 
 pub trait CRUD
 where
