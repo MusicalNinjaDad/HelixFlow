@@ -75,11 +75,6 @@ impl TaskList {
     }
 }
 
-impl Relationship for Contains<TaskList, Task> {
-    type Left = TaskList;
-    type Right = Task;
-}
-
 #[derive(Debug)]
 pub struct Contains<LEFT, RIGHT> {
     pub left: HelixFlowResult<LEFT>,
@@ -133,6 +128,11 @@ where
             },
         })
     }
+}
+
+impl Relationship for Contains<TaskList, Task> {
+    type Left = TaskList;
+    type Right = Task;
 }
 
 impl Link for Contains<TaskList, Task> {
