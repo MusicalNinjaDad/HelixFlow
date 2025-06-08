@@ -248,7 +248,7 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
 }
 
 impl SurrealDb<Db> {
-    /// Instantiate an local Db, with data saved in a rocksdb in `directory`,
+    /// Instantiate an local Db, with data saved in `Some(file)` on drop,
     /// or simply held in memory (`None`).
     ///
     /// Note:
