@@ -13,6 +13,8 @@ use uuid::Uuid;
 pub mod task;
 
 /// Marker trait for our data items
+// TODO: Derive macro for HelixFlowItem, as we can't have a standard impl of `as_any`
+//       and remain dyn compatible
 pub trait HelixFlowItem
 where
     // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
@@ -100,8 +102,9 @@ where
 ///    type Right = Task;
 /// }
 /// ```
-// TODO: Add derive macro to generate Link, Linkable, Relate, Try & FromResidual for valid type pairings
-// Can't do this in a blanket impl as it requires guarantees for fields `left`and `right`
+// TODO: Add derive macro to generate Link, Linkable, Relate, Try & FromResidual for valid
+//       type pairings. Can't do this in a blanket impl as it requires guarantees for fields
+//       `left` and `right`
 pub trait Relationship
 where
     Self: Sized,
