@@ -10,14 +10,9 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use uuid::{Uuid, uuid};
 
-/// Marker trait for our data items
-pub trait HelixFlowItem
-where
-    // required for Mismatch Error (which uses `Box<dyn HelixFlowItem>`)
-    Self: std::fmt::Debug + Send + Sync + 'static + Any,
-{
-    fn as_any(&self) -> &dyn Any;
-}
+use crate::{
+    HelixFlowError, HelixFlowItem, HelixFlowResult, Link, Linkable, Relate, Relationship, Store,
+};
 
 impl HelixFlowItem for Task {
     fn as_any(&self) -> &dyn Any {
@@ -80,29 +75,6 @@ impl TaskList {
     }
 }
 
-/// A valid usage of a relationship struct, defining acceptable types for left & right.
-///
-/// E.g. to allow `Contains`to be used for `TaskList -> Contains -> Task`:
-/// ```ignore
-/// impl Relationship for Contains<TaskList, Task> {
-///    type Left = TaskList;
-///    type Right = Task;
-/// }
-/// ```
-// TODO: Add derive macro to generate Relationship, Try & FromResidual for valid type pairings
-pub trait Relationship
-where
-    Self: Sized,
-{
-    type Left;
-    type Right;
-}
-
-impl Relationship for Contains<TaskList, Task> {
-    type Left = TaskList;
-    type Right = Task;
-}
-
 #[derive(Debug)]
 pub struct Contains<LEFT, RIGHT> {
     pub left: HelixFlowResult<LEFT>,
@@ -110,10 +82,14 @@ pub struct Contains<LEFT, RIGHT> {
     pub right: HelixFlowResult<RIGHT>,
 }
 
+impl Relationship for Contains<TaskList, Task> {
+    type Left = TaskList;
+    type Right = Task;
+}
+
 impl<LEFT, RIGHT> Try for Contains<LEFT, RIGHT>
 where
-    LEFT: HelixFlowItem,
-    RIGHT: HelixFlowItem,
+    Contains<LEFT, RIGHT>: Relationship,
 {
     type Output = Self; // Continue
     type Residual = Self; // Break
@@ -131,8 +107,7 @@ where
 
 impl<LEFT, RIGHT> FromResidual<Contains<LEFT, RIGHT>> for Contains<LEFT, RIGHT>
 where
-    LEFT: HelixFlowItem,
-    RIGHT: HelixFlowItem,
+    Contains<LEFT, RIGHT>: Relationship,
 {
     fn from_residual(_residual: Contains<LEFT, RIGHT>) -> Self {
         unimplemented!("Contains? should only be used in funtions returning a Result")
@@ -141,6 +116,7 @@ where
 
 impl<LEFT, RIGHT> FromResidual<Contains<LEFT, RIGHT>> for HelixFlowResult<()>
 where
+    Contains<LEFT, RIGHT>: Relationship,
     LEFT: HelixFlowItem,
     RIGHT: HelixFlowItem,
 {
@@ -158,101 +134,13 @@ where
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum HelixFlowError {
-    // The #[from] anyhow::Error will convert anything that offers `into anyhow::Error`.
-    #[error("backend error: {0}")]
-    BackendError(#[from] anyhow::Error),
-
-    #[error("created item does not match expectations: expected {expected:?}, got {actual:?}")]
-    Mismatch {
-        expected: Box<dyn HelixFlowItem>,
-        actual: Box<dyn HelixFlowItem>,
-    },
-
-    #[error("task id ({id:?}) is not a valid UUID v7")]
-    InvalidID { id: String },
-
-    #[error("404 No {itemtype} found with id {id}")]
-    NotFound { itemtype: String, id: Uuid },
-
-    #[error("Relationship between {left:?} and {right:?} contains Errors")]
-    RelationshipBetweenErrors {
-        left: Box<HelixFlowResult<Box<dyn HelixFlowItem>>>,
-        right: Box<HelixFlowResult<Box<dyn HelixFlowItem>>>,
-    },
-}
-
-pub type HelixFlowResult<T> = std::result::Result<T, HelixFlowError>;
-
-pub trait CRUD
+impl<LEFT, RIGHT> Link for Contains<LEFT, RIGHT>
 where
-    Self: Sized,
+    Contains<LEFT, RIGHT>: Relationship,
+    LEFT: HelixFlowItem,
+    RIGHT: HelixFlowItem + Clone + PartialEq,
 {
-    fn create<B: Store<Self>>(&self, backend: &B) -> HelixFlowResult<()>;
-    fn get<B: Store<Self>>(backend: &B, id: &Uuid) -> HelixFlowResult<Self>;
-}
-
-/// Methods to store and retrieve `ITEM` in a backend
-pub trait Store<ITEM> {
-    /// Create a new `ITEM` in the backend.
-    ///
-    /// The returned `ITEM` should be the actual stored record from the backend - to allow
-    /// validation by `CRUD<ITEM>::create()`
-    fn create(&self, item: &ITEM) -> HelixFlowResult<ITEM>;
-
-    /// Get an `ITEM` from the backend
-    fn get(&self, id: &Uuid) -> HelixFlowResult<ITEM>;
-}
-
-impl<ITEM> CRUD for ITEM
-where
-    ITEM: HelixFlowItem + PartialEq + Clone,
-{
-    /// Create this item in a given storage backend.
-    fn create<B: Store<ITEM>>(&self, backend: &B) -> HelixFlowResult<()> {
-        let created_item = backend.create(self)?;
-        if &created_item == self {
-            Ok(())
-        } else {
-            Err(HelixFlowError::Mismatch {
-                expected: Box::new(self.clone()),
-                actual: Box::new(created_item),
-            })
-        }
-    }
-
-    /// Get item from `backend` by `id`
-    fn get<B: Store<ITEM>>(backend: &B, id: &Uuid) -> HelixFlowResult<ITEM> {
-        backend.get(id)
-    }
-}
-
-/// `impl Link<REL> for LEFT` gives `Left Rel:(-> link_type -> Right)`
-pub trait Link
-where
-    Self: Relationship,
-{
-    fn create_linked_item<B: Relate<Self>>(self, backend: &B) -> HelixFlowResult<()>;
-}
-
-pub trait Linkable<REL: Link> {
-    fn link(&self, right: &REL::Right) -> REL;
-    fn get_linked_items<B: Relate<REL>>(
-        &self,
-        backend: &B,
-    ) -> HelixFlowResult<impl Iterator<Item = REL>>;
-}
-
-/// Methods to relate items in a backend
-pub trait Relate<REL: Link> {
-    /// Create and link the related item
-    fn create_linked_item(&self, link: &REL) -> HelixFlowResult<REL>;
-    fn get_linked_items(&self, left: &REL::Left) -> HelixFlowResult<impl Iterator<Item = REL>>;
-}
-
-impl Link for Contains<TaskList, Task> {
-    fn create_linked_item<B: Relate<Contains<TaskList, Task>>>(
+    fn create_linked_item<B: Relate<Contains<LEFT, RIGHT>>>(
         self,
         backend: &B,
     ) -> HelixFlowResult<()> {
@@ -271,8 +159,13 @@ impl Link for Contains<TaskList, Task> {
     }
 }
 
-impl Linkable<Contains<TaskList, Task>> for TaskList {
-    fn link(&self, task: &Task) -> Contains<TaskList, Task> {
+impl<LEFT, RIGHT> Linkable<Contains<LEFT, RIGHT>> for LEFT
+where
+    Contains<LEFT, RIGHT>: Relationship<Left = LEFT, Right = RIGHT>,
+    LEFT: HelixFlowItem + Clone + PartialEq,
+    RIGHT: HelixFlowItem + Clone + PartialEq,
+{
+    fn link(&self, task: &RIGHT) -> Contains<LEFT, RIGHT> {
         Contains {
             left: Ok(self.clone()),
             sortorder: "a".into(),
@@ -282,9 +175,9 @@ impl Linkable<Contains<TaskList, Task>> for TaskList {
     fn get_linked_items<B>(
         &self,
         backend: &B,
-    ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>>
+    ) -> HelixFlowResult<impl Iterator<Item = Contains<LEFT, RIGHT>>>
     where
-        B: Relate<Contains<TaskList, Task>>,
+        B: Relate<Contains<LEFT, RIGHT>>,
     {
         backend.get_linked_items(self)
     }
@@ -389,6 +282,8 @@ impl Relate<Contains<TaskList, Task>> for TestBackend {
 #[cfg(test)]
 #[coverage(off)]
 mod tests {
+    use crate::CRUD;
+
     use super::*;
     use std::assert_matches::assert_matches;
 

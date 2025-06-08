@@ -15,7 +15,10 @@ use surrealdb::{
     sql::{Id, Thing},
 };
 
-use helixflow_core::task::{HelixFlowError, HelixFlowResult, Task, TaskList};
+use helixflow_core::{
+    HelixFlowError, HelixFlowResult,
+    task::{Task, TaskList},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 /// SurrealDb returns a `Thing` as `id`.
@@ -95,7 +98,7 @@ struct Link {
     out: Thing,
 }
 
-use helixflow_core::task::{Contains, Relate, Store};
+use helixflow_core::{Relate, Store, task::Contains};
 /// An instance of a SurrealDb ready to use as a `StorageBackend`
 ///
 /// This requires some form of instantiation function, the exact specification of which will depend
@@ -317,61 +320,75 @@ mod tests {
     use super::*;
 
     use rstest::*;
-    use rstest_reuse::*;
 
-    use tempfile::NamedTempFile;
+    use tempfile::{NamedTempFile, TempPath};
 
-    fn no_file() -> SurrealDb<Db> {
-        SurrealDb::new(None).unwrap()
+    #[derive(Clone, Copy, Debug)]
+    enum BackendKind {
+        Mem,
+        File,
     }
 
-    fn save_to_file() -> SurrealDb<Db> {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let location = tmpfile.path().into();
-        tmpfile.close().unwrap(); // explicity delete the file - we just need a valid, unique PathBuf
-        SurrealDb::new(Some(location)).unwrap()
+    struct Backend {
+        _file_destructor: Option<TempPath>,
+        backend: SurrealDb<Db>,
     }
 
-    #[template]
-    #[rstest]
-    #[case::mem(no_file)]
-    #[case::save(save_to_file)]
-    fn test_backends<F>(#[case] backend: F)
-    where
-        F: FnOnce() -> SurrealDb<Db>,
-    {
-    }
-
-    #[apply(test_backends)]
-    fn test_new_task<F>(#[case] backend: F)
-    where
-        F: FnOnce() -> SurrealDb<Db>,
-    {
-        let new_task = Task::new("Test Task 1", None);
-        let backend = backend();
-        backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-    }
-
-    #[apply(test_backends)]
-    fn test_new_task_written_to_db<F>(#[case] backend: F)
-    where
-        F: FnOnce() -> SurrealDb<Db>,
-    {
-        {
-            let new_task = Task::new("Test Task 2", None);
-            let backend = backend();
-            backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-            let stored_task: Task = backend.get(&new_task.id).unwrap();
-            assert_eq!(stored_task, new_task);
+    impl From<BackendKind> for Backend {
+        fn from(kind: BackendKind) -> Self {
+            match kind {
+                BackendKind::Mem => Backend {
+                    _file_destructor: None,
+                    backend: SurrealDb::new(None).unwrap(),
+                },
+                BackendKind::File => {
+                    let tmpfile = NamedTempFile::new().unwrap();
+                    let location = tmpfile.path().into();
+                    let tmppath = tmpfile.into_temp_path();
+                    std::fs::remove_file(&location).unwrap();
+                    Backend {
+                        _file_destructor: Some(tmppath),
+                        backend: SurrealDb::new(Some(location)).unwrap(),
+                    }
+                }
+            }
         }
     }
 
-    #[apply(test_backends)]
-    fn test_get_not_found<F>(#[case] backend: F)
-    where
-        F: FnOnce() -> SurrealDb<Db>,
-    {
-        let backend = backend();
+    #[rstest]
+    #[case(BackendKind::Mem)]
+    #[case(BackendKind::File)]
+    fn test_new_task(#[case] kind: BackendKind) {
+        let Backend {
+            _file_destructor,
+            backend,
+        } = kind.into();
+        let new_task = Task::new("Test Task 1", None);
+        backend.create(&new_task).unwrap();
+    }
+
+    #[rstest]
+    #[case(BackendKind::Mem)]
+    #[case(BackendKind::File)]
+    fn test_new_task_written_to_db(#[case] kind: BackendKind) {
+        let Backend {
+            _file_destructor,
+            backend,
+        } = kind.into();
+        let new_task = Task::new("Test Task 2", None);
+        backend.create(&new_task).unwrap();
+        let stored_task: Task = backend.get(&new_task.id).unwrap();
+        assert_eq!(stored_task, new_task);
+    }
+
+    #[rstest]
+    #[case(BackendKind::Mem)]
+    #[case(BackendKind::File)]
+    fn test_get_not_found(#[case] kind: BackendKind) {
+        let Backend {
+            _file_destructor,
+            backend,
+        } = kind.into();
         let id = Uuid::now_v7();
         let res: HelixFlowResult<Task> = backend.get(&id);
         let err = res.unwrap_err();

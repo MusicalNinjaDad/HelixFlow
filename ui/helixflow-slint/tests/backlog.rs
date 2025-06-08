@@ -4,7 +4,10 @@ use uuid::uuid;
 
 use slint::{ComponentHandle, ModelRc, VecModel};
 
-use helixflow_core::task::{CRUD, Linkable, TaskList, TestBackend};
+use helixflow_core::{
+    CRUD, Linkable,
+    task::{TaskList, TestBackend},
+};
 use helixflow_slint::{Backlog, SlintTask, task::load_backlog, test::*};
 
 #[test]

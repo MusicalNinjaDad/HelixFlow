@@ -3,7 +3,10 @@ use std::rc::Rc;
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global};
 
-use helixflow_core::task::{CRUD, Task, TaskList};
+use helixflow_core::{
+    CRUD,
+    task::{Task, TaskList},
+};
 use helixflow_slint::{
     CurrentTask, HelixFlow,
     task::{create_task, create_task_in_backlog, load_backlog},
