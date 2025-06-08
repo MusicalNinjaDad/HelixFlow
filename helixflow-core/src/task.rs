@@ -134,8 +134,13 @@ impl Relationship for Contains<TaskList, Task> {
     type Right = Task;
 }
 
-impl Link for Contains<TaskList, Task> {
-    fn create_linked_item<B: Relate<Contains<TaskList, Task>>>(
+impl<LEFT, RIGHT> Link for Contains<LEFT, RIGHT>
+where
+    Contains<LEFT, RIGHT>: Relationship,
+    LEFT: HelixFlowItem,
+    RIGHT: HelixFlowItem + Clone + PartialEq,
+{
+    fn create_linked_item<B: Relate<Contains<LEFT, RIGHT>>>(
         self,
         backend: &B,
     ) -> HelixFlowResult<()> {
