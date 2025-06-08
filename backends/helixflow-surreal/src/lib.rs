@@ -302,7 +302,7 @@ where
             self.rt
                 .block_on(self.db.export(file).into_future())
                 .unwrap()
-                // TODO - handle errors nicely
+            // TODO - handle errors nicely
         }
     }
 }
@@ -326,7 +326,9 @@ mod tests {
     }
 
     fn save_to_file() -> SurrealDb<Db> {
-        let location = NamedTempFile::new().unwrap().path().into();
+        let tmpfile = NamedTempFile::new().unwrap();
+        let location = tmpfile.path().into();
+        tmpfile.close().unwrap(); // explicity delete the file - we just need a valid, unique PathBuf
         SurrealDb::new(Some(location)).unwrap()
     }
 
