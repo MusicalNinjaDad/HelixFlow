@@ -98,7 +98,7 @@ struct Link {
     out: Thing,
 }
 
-use helixflow_core::task::{Contains, Relate, Store};
+use helixflow_core::{Relate, Store, task::Contains};
 /// An instance of a SurrealDb ready to use as a `StorageBackend`
 ///
 /// This requires some form of instantiation function, the exact specification of which will depend
