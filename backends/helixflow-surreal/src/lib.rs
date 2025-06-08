@@ -1,8 +1,9 @@
 #![feature(assert_matches)]
 #![feature(coverage_attribute)]
+#![feature(let_chains)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
-use std::{borrow::Cow, rc::Rc};
+use std::{borrow::Cow, path::PathBuf, rc::Rc};
 
 use anyhow::Context;
 use log::debug;
@@ -10,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use surrealdb::{
     Connection, Surreal, Uuid,
     engine::local::{Db, Mem},
+    error::Api,
     sql::{Id, Thing},
 };
 
@@ -100,7 +102,7 @@ use helixflow_core::task::{Contains, Relate, Store};
 /// on the type of `<C: Connection>` selected. See the unit tests for an example of instantiating
 /// an in-memory Db.
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SurrealDb<C: Connection> {
     /// The instatiated Surreal Db `Connection`. This should be in an authenticated state with
     /// `namespace` & `database` already selected, so that functions such as `create()` can be
@@ -109,6 +111,9 @@ pub struct SurrealDb<C: Connection> {
 
     /// A dedicated tokio runtime to allow for blocking operations
     rt: Rc<tokio::runtime::Runtime>,
+
+    /// A file where the data will be persisted
+    file: Option<PathBuf>,
 }
 
 impl<C: Connection> Store<Task> for SurrealDb<C> {
@@ -242,10 +247,14 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
     }
 }
 
-/// Instantiate an in-memory Db with `ns` & `db` = "HelixFlow".
-/// This is a blocking operation until the db is available.
 impl SurrealDb<Db> {
-    pub fn new() -> anyhow::Result<Self> {
+    /// Instantiate an local Db, with data saved in `Some(file)` on drop,
+    /// or simply held in memory (`None`).
+    ///
+    /// Note:
+    /// - `ns` & `db` = "HelixFlow"
+    /// - This is a blocking operation until the db is available.
+    pub fn new(file: Option<PathBuf>) -> anyhow::Result<Self> {
         debug!("Initialising tokio runtime");
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -258,10 +267,43 @@ impl SurrealDb<Db> {
         debug!("Selecting database namespace");
         rt.block_on(db.use_ns("HelixFlow").use_db("HelixFlow").into_future())
             .context("Selecting database namespace")?;
+        if let Some(file) = &file {
+            let imported = rt.block_on(db.import(file).into_future());
+
+            if let Err(e) = &imported
+                && let surrealdb::Error::Api(Api::FileOpen { error, path }) = e
+                && error.kind() == std::io::ErrorKind::NotFound
+                && path == file
+            {
+                Ok(())
+            } else {
+                imported
+            }
+            .context(format!("Importing {:#?}", file))?
+        }
         debug!("Stuffing the runtime in an Rc");
         let runtime = Rc::new(rt);
         debug!("Done connecting to database");
-        Ok(Self { db, rt: runtime })
+        Ok(Self {
+            db,
+            rt: runtime,
+            file,
+        })
+    }
+}
+
+impl<C> Drop for SurrealDb<C>
+where
+    C: Connection,
+{
+    fn drop(&mut self) {
+        if let Some(file) = &self.file {
+            println!("Saving to {:#?}", file);
+            self.rt
+                .block_on(self.db.export(file).into_future())
+                .unwrap()
+            // TODO - handle errors nicely
+        }
     }
 }
 
@@ -274,38 +316,86 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_new_task() {
-        {
-            let new_task = Task::new("Test Task 1", None);
-            let backend = SurrealDb::new().unwrap();
-            backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
-        }
+    use rstest::*;
+    use rstest_reuse::*;
+
+    use tempfile::NamedTempFile;
+
+    fn no_file() -> SurrealDb<Db> {
+        SurrealDb::new(None).unwrap()
     }
 
-    #[test]
-    fn test_new_task_written_to_db() {
+    fn save_to_file() -> SurrealDb<Db> {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let location = tmpfile.path().into();
+        tmpfile.close().unwrap(); // explicity delete the file - we just need a valid, unique PathBuf
+        SurrealDb::new(Some(location)).unwrap()
+    }
+
+    #[template]
+    #[rstest]
+    #[case::mem(no_file)]
+    #[case::save(save_to_file)]
+    fn test_backends<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
+    }
+
+    #[apply(test_backends)]
+    fn test_new_task<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
+        let new_task = Task::new("Test Task 1", None);
+        let backend = backend();
+        backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
+    }
+
+    #[apply(test_backends)]
+    fn test_new_task_written_to_db<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
         {
             let new_task = Task::new("Test Task 2", None);
-            let backend = SurrealDb::new().unwrap();
+            let backend = backend();
             backend.create(&new_task).unwrap(); // Unwrap to check we don't get any errors
             let stored_task: Task = backend.get(&new_task.id).unwrap();
             assert_eq!(stored_task, new_task);
         }
     }
 
+    #[apply(test_backends)]
+    fn test_get_not_found<F>(#[case] backend: F)
+    where
+        F: FnOnce() -> SurrealDb<Db>,
+    {
+        let backend = backend();
+        let id = Uuid::now_v7();
+        let res: HelixFlowResult<Task> = backend.get(&id);
+        let err = res.unwrap_err();
+        assert_matches!(
+            err,
+            HelixFlowError::NotFound { itemtype, id: errid }
+            if itemtype == "Task" && errid == id
+        );
+    }
+
     #[test]
-    fn test_get_not_found() {
+    fn test_save_and_load() {
+        let location = NamedTempFile::new().unwrap();
+        let new_task = Task::new("Test Task 1", None);
+
+        let file = location.path().to_path_buf();
         {
-            let backend = SurrealDb::new().unwrap();
-            let id = Uuid::now_v7();
-            let res: HelixFlowResult<Task> = backend.get(&id);
-            let err = res.unwrap_err();
-            assert_matches!(
-                err,
-                HelixFlowError::NotFound { itemtype, id }
-                if itemtype == "Task" && id == id
-            );
-        }
+            let backend1 = SurrealDb::new(Some(file)).unwrap();
+            backend1.create(&new_task).unwrap();
+        } // backend1 destructor should store task in file
+
+        let file = location.path().to_path_buf();
+        let backend2 = SurrealDb::new(Some(file)).unwrap();
+        let stored_task: Task = backend2.get(&new_task.id).unwrap();
+        assert_eq!(stored_task, new_task);
     }
 }

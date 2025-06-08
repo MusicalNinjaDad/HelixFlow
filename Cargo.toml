@@ -22,6 +22,8 @@ uuid = { version = "1.16.0", features = ["v7", "js"] }
 assert_unordered = "0.3.5"
 i-slint-backend-testing = { git = "https://github.com/slint-ui/slint" }
 rstest = "0.25.0"
+rstest_reuse = "0.7.0"
+tempfile = "3.20.0"
 
 # build dependencies
 slint-build = { git = "https://github.com/slint-ui/slint" }

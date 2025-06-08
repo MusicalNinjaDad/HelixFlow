@@ -15,7 +15,7 @@ use helixflow_surreal::SurrealDb;
 fn test_create_task() {
     prepare_slint!();
 
-    let backend = Rc::new(SurrealDb::new().unwrap());
+    let backend = Rc::new(SurrealDb::new(None).unwrap());
 
     let helixflow = HelixFlow::new().unwrap();
     list_elements!(&helixflow);
@@ -63,7 +63,7 @@ fn test_create_task() {
 fn add_tasks_to_backlog() {
     prepare_slint!();
 
-    let backend = Rc::new(SurrealDb::new().unwrap());
+    let backend = Rc::new(SurrealDb::new(None).unwrap());
 
     let helixflow = HelixFlow::new().unwrap();
     list_elements!(&helixflow);
