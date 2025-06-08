@@ -10,6 +10,7 @@ use std::any::Any;
 
 use uuid::Uuid;
 
+pub mod state;
 pub mod task;
 
 /// Marker trait for our data items
