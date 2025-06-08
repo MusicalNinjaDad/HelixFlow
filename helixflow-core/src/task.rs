@@ -84,8 +84,7 @@ pub struct Contains<LEFT, RIGHT> {
 
 impl<LEFT, RIGHT> Try for Contains<LEFT, RIGHT>
 where
-    LEFT: HelixFlowItem,
-    RIGHT: HelixFlowItem,
+    Contains<LEFT, RIGHT>: Relationship,
 {
     type Output = Self; // Continue
     type Residual = Self; // Break
@@ -103,8 +102,7 @@ where
 
 impl<LEFT, RIGHT> FromResidual<Contains<LEFT, RIGHT>> for Contains<LEFT, RIGHT>
 where
-    LEFT: HelixFlowItem,
-    RIGHT: HelixFlowItem,
+    Contains<LEFT, RIGHT>: Relationship,
 {
     fn from_residual(_residual: Contains<LEFT, RIGHT>) -> Self {
         unimplemented!("Contains? should only be used in funtions returning a Result")
@@ -113,6 +111,7 @@ where
 
 impl<LEFT, RIGHT> FromResidual<Contains<LEFT, RIGHT>> for HelixFlowResult<()>
 where
+    Contains<LEFT, RIGHT>: Relationship,
     LEFT: HelixFlowItem,
     RIGHT: HelixFlowItem,
 {

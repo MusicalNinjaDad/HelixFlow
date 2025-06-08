@@ -100,13 +100,14 @@ where
 ///    type Right = Task;
 /// }
 /// ```
-// TODO: Add derive macro to generate Relationship, Try & FromResidual for valid type pairings
+// TODO: Add derive macro to generate Link, Linkable, Relate, Try & FromResidual for valid type pairings
+// Can't do this in a blanket impl as it requires guarantees for fields `left`and `right`
 pub trait Relationship
 where
     Self: Sized,
 {
-    type Left;
-    type Right;
+    type Left: HelixFlowItem;
+    type Right: HelixFlowItem;
 }
 
 /// `impl Link<REL> for LEFT` gives `Left Rel:(-> link_type -> Right)`
