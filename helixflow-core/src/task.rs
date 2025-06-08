@@ -159,8 +159,13 @@ where
     }
 }
 
-impl Linkable<Contains<TaskList, Task>> for TaskList {
-    fn link(&self, task: &Task) -> Contains<TaskList, Task> {
+impl<LEFT, RIGHT> Linkable<Contains<LEFT, RIGHT>> for LEFT
+where
+    Contains<LEFT, RIGHT>: Relationship<Left = LEFT, Right = RIGHT>,
+    LEFT: HelixFlowItem + Clone + PartialEq,
+    RIGHT: HelixFlowItem + Clone + PartialEq,
+{
+    fn link(&self, task: &RIGHT) -> Contains<LEFT, RIGHT> {
         Contains {
             left: Ok(self.clone()),
             sortorder: "a".into(),
@@ -170,9 +175,9 @@ impl Linkable<Contains<TaskList, Task>> for TaskList {
     fn get_linked_items<B>(
         &self,
         backend: &B,
-    ) -> HelixFlowResult<impl Iterator<Item = Contains<TaskList, Task>>>
+    ) -> HelixFlowResult<impl Iterator<Item = Contains<LEFT, RIGHT>>>
     where
-        B: Relate<Contains<TaskList, Task>>,
+        B: Relate<Contains<LEFT, RIGHT>>,
     {
         backend.get_linked_items(self)
     }
