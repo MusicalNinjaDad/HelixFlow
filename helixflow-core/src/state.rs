@@ -8,7 +8,7 @@ use crate::{HelixFlowItem, task::TaskList};
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct State {
     visible_backlog: Option<Uuid>,
-    id: Uuid,
+    pub id: Uuid,
 }
 
 impl HelixFlowItem for State {

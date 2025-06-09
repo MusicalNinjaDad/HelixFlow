@@ -251,9 +251,55 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct SurrealState {
+    visible_backlog: Option<Uuid>,
+    id: Thing,
+}
+
+impl TryFrom<SurrealState> for State {
+    type Error = HelixFlowError;
+    fn try_from(state: SurrealState) -> HelixFlowResult<State> {
+        let id = match state.id.id {
+            Id::Uuid(id) => Ok(id.into()),
+            _ => Err(HelixFlowError::InvalidID {
+                id: state.id.id.to_string(),
+            }),
+        };
+        let mut stored_state = State::new(&id?);
+        stored_state.visible_backlog(&TaskList {
+            name: "".into(),
+            id: state.visible_backlog.unwrap(),
+        });
+        Ok(stored_state)
+    }
+}
+
+impl From<&State> for SurrealState {
+    fn from(state: &State) -> Self {
+        SurrealState {
+            visible_backlog: *state.visible_backlog_id(),
+            id: Thing::from(("State", Id::Uuid(state.id.into()))),
+        }
+    }
+}
+
 impl<C: Connection> Store<State> for SurrealDb<C> {
     fn create(&self, item: &State) -> HelixFlowResult<State> {
-        todo!()
+        dbg!(item);
+        let dbitem: SurrealState = self
+            .rt
+            .block_on(
+                self.db
+                    .create("State")
+                    .content(SurrealState::from(item))
+                    .into_future(),
+            )
+            .map_err(anyhow::Error::from)?
+            .with_context(|| format!("Creating new record for {:#?} in SurrealDb", item))?;
+        let checkitem = dbitem.try_into()?;
+        dbg!(&checkitem);
+        Ok(checkitem)
     }
     fn get(&self, id: &Uuid) -> HelixFlowResult<State> {
         todo!()
