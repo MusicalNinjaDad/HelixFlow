@@ -1,4 +1,4 @@
-use std::{any::Any};
+use std::any::Any;
 
 use uuid::Uuid;
 
@@ -18,8 +18,7 @@ impl HelixFlowItem for State {
 }
 
 impl State {
-    pub fn new(id: &Uuid) -> Self
-    {
+    pub fn new(id: &Uuid) -> Self {
         State {
             id: *id,
             ..Default::default()

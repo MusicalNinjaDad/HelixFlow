@@ -17,6 +17,7 @@ use surrealdb::{
 
 use helixflow_core::{
     HelixFlowError, HelixFlowResult,
+    state::State,
     task::{Task, TaskList},
 };
 
@@ -247,6 +248,15 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
                 right: task.try_into(),
             });
         Ok(relationships)
+    }
+}
+
+impl<C: Connection> Store<State> for SurrealDb<C> {
+    fn create(&self, item: &State) -> HelixFlowResult<State> {
+        todo!()
+    }
+    fn get(&self, id: &Uuid) -> HelixFlowResult<State> {
+        todo!()
     }
 }
 

@@ -107,8 +107,6 @@ fn add_tasks_to_backlog() {
     assert_eq!(task_entry.accessible_value().unwrap(), "");
 }
 
-
-#[cfg(false)]
 #[test]
 fn store_ui_state() {
     use uuid::Uuid;
@@ -123,11 +121,14 @@ fn store_ui_state() {
     let backlog = TaskList::new("This week");
     let state_id = Uuid::now_v7();
 
-    let mut ui_state: State = State::new(&state_id);
-    ui_state.visible_backlog(&backlog);
-    ui_state.create(backend.as_ref()).unwrap();
-    
-    let stored_backlog = State::get(backend.as_ref(), &state_id).unwrap().visible_backlog_id();
+    {
+        let mut ui_state: State = State::new(&state_id);
+        ui_state.visible_backlog(&backlog);
+        ui_state.create(backend.as_ref()).unwrap();
+    }
+
+    let ui_state = State::get(backend.as_ref(), &state_id).unwrap();
+    let stored_backlog = ui_state.visible_backlog_id();
 
     assert_eq!(stored_backlog, &Some(backlog.id));
 }
