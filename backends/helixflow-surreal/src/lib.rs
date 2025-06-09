@@ -285,21 +285,21 @@ impl From<&State> for SurrealState {
 }
 
 impl<C: Connection> Store<State> for SurrealDb<C> {
-    fn create(&self, item: &State) -> HelixFlowResult<State> {
-        dbg!(item);
-        let dbitem: SurrealState = self
+    fn create(&self, state: &State) -> HelixFlowResult<State> {
+        dbg!(state);
+        let dbstate: SurrealState = self
             .rt
             .block_on(
                 self.db
                     .create("State")
-                    .content(SurrealState::from(item))
+                    .content(SurrealState::from(state))
                     .into_future(),
             )
             .map_err(anyhow::Error::from)?
-            .with_context(|| format!("Creating new record for {:#?} in SurrealDb", item))?;
-        let checkitem = dbitem.try_into()?;
-        dbg!(&checkitem);
-        Ok(checkitem)
+            .with_context(|| format!("Creating new record for {:#?} in SurrealDb", state))?;
+        let checkstate = dbstate.try_into()?;
+        dbg!(&checkstate);
+        Ok(checkstate)
     }
 
     fn get(&self, id: &Uuid) -> HelixFlowResult<State> {
