@@ -18,9 +18,9 @@ impl HelixFlowItem for State {
 }
 
 impl State {
-    pub fn new(id: Uuid) -> Self {
+    pub fn new(id: &Uuid) -> Self {
         State {
-            id,
+            id: *id,
             ..Default::default()
         }
     }
