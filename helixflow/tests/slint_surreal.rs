@@ -111,6 +111,8 @@ fn add_tasks_to_backlog() {
 #[cfg(false)]
 #[test]
 fn store_ui_state() {
+    use uuid::Uuid;
+
     prepare_slint!();
 
     let backend = Rc::new(SurrealDb::new(None).unwrap());
@@ -119,12 +121,13 @@ fn store_ui_state() {
     list_elements!(&helixflow);
 
     let backlog = TaskList::new("This week");
+    let state_id = Uuid::now_v7();
 
-    let mut ui_state: State = State::new("app");
+    let mut ui_state: State = State::new(&state_id);
     ui_state.visible_backlog(&backlog);
     ui_state.create(backend.as_ref()).unwrap();
     
-    let stored_backlog = State::get(backend.as_ref(), "app").unwrap().visible_backlog_id();
+    let stored_backlog = State::get(backend.as_ref(), &state_id).unwrap().visible_backlog_id();
 
     assert_eq!(stored_backlog, &Some(backlog.id));
 }

@@ -1,4 +1,4 @@
-use std::{any::Any, borrow::Cow};
+use std::{any::Any};
 
 use uuid::Uuid;
 
@@ -9,7 +9,7 @@ use crate::{HelixFlowItem, task::TaskList};
 #[non_exhaustive]
 pub struct State {
     visible_backlog: Option<Uuid>,
-    id: Cow<'static, str>,
+    id: Uuid,
 }
 
 impl HelixFlowItem for State {
@@ -19,12 +19,10 @@ impl HelixFlowItem for State {
 }
 
 impl State {
-    pub fn new<ID>(id: ID) -> Self
-    where
-        ID: Into<Cow<'static, str>>,
+    pub fn new(id: &Uuid) -> Self
     {
         State {
-            id: id.into(),
+            id: *id,
             ..Default::default()
         }
     }
