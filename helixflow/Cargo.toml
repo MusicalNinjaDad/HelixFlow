@@ -12,6 +12,7 @@ helixflow-surreal.workspace = true
 helixflow-slint.workspace = true
 log.workspace = true
 slint.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
 i-slint-backend-testing.workspace = true
