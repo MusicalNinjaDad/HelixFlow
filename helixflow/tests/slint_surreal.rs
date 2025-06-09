@@ -1,5 +1,8 @@
+#![feature(cfg_boolean_literals)]
+
 use std::rc::Rc;
 
+use helixflow_core::state::State;
 use slint::platform::PointerEventButton;
 use slint::{ComponentHandle, Global};
 
@@ -102,4 +105,30 @@ fn add_tasks_to_backlog() {
     assert_values!(tasks, expected_task_values);
     let task_entry = get!(&helixflow, "Backlog::new_task_entry");
     assert_eq!(task_entry.accessible_value().unwrap(), "");
+}
+
+#[test]
+fn store_ui_state() {
+    use uuid::Uuid;
+
+    prepare_slint!();
+
+    let backend = Rc::new(SurrealDb::new(None).unwrap());
+
+    let helixflow = HelixFlow::new().unwrap();
+    list_elements!(&helixflow);
+
+    let backlog = TaskList::new("This week");
+    let state_id = Uuid::now_v7();
+
+    {
+        let mut ui_state: State = State::new(&state_id);
+        ui_state.visible_backlog(&backlog);
+        ui_state.create(backend.as_ref()).unwrap();
+    }
+
+    let ui_state = State::get(backend.as_ref(), &state_id).unwrap();
+    let stored_backlog = ui_state.visible_backlog_id();
+
+    assert_eq!(stored_backlog, &Some(backlog.id));
 }

@@ -17,6 +17,7 @@ use surrealdb::{
 
 use helixflow_core::{
     HelixFlowError, HelixFlowResult,
+    state::State,
     task::{Task, TaskList},
 };
 
@@ -247,6 +248,73 @@ impl<C: Connection> Relate<Contains<TaskList, Task>> for SurrealDb<C> {
                 right: task.try_into(),
             });
         Ok(relationships)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SurrealState {
+    visible_backlog: Option<Uuid>,
+    id: Thing,
+}
+
+impl TryFrom<SurrealState> for State {
+    type Error = HelixFlowError;
+    fn try_from(state: SurrealState) -> HelixFlowResult<State> {
+        let id = match state.id.id {
+            Id::Uuid(id) => Ok(id.into()),
+            _ => Err(HelixFlowError::InvalidID {
+                id: state.id.id.to_string(),
+            }),
+        };
+        let mut stored_state = State::new(&id?);
+        stored_state.visible_backlog(&TaskList {
+            name: "".into(),
+            id: state.visible_backlog.unwrap(),
+        });
+        Ok(stored_state)
+    }
+}
+
+impl From<&State> for SurrealState {
+    fn from(state: &State) -> Self {
+        SurrealState {
+            visible_backlog: *state.visible_backlog_id(),
+            id: Thing::from(("State", Id::Uuid(state.id.into()))),
+        }
+    }
+}
+
+impl<C: Connection> Store<State> for SurrealDb<C> {
+    fn create(&self, state: &State) -> HelixFlowResult<State> {
+        dbg!(state);
+        let dbstate: SurrealState = self
+            .rt
+            .block_on(
+                self.db
+                    .create("State")
+                    .content(SurrealState::from(state))
+                    .into_future(),
+            )
+            .map_err(anyhow::Error::from)?
+            .with_context(|| format!("Creating new record for {:#?} in SurrealDb", state))?;
+        let checkstate = dbstate.try_into()?;
+        dbg!(&checkstate);
+        Ok(checkstate)
+    }
+
+    fn get(&self, id: &Uuid) -> HelixFlowResult<State> {
+        let dbstate: Option<SurrealState> = self
+            .rt
+            .block_on(self.db.select(("State", *id)).into_future())
+            .map_err(anyhow::Error::from)?;
+        if let Some(state) = dbstate {
+            Ok(state.try_into()?)
+        } else {
+            Err(HelixFlowError::NotFound {
+                itemtype: "State".into(),
+                id: *id,
+            })
+        }
     }
 }
 
