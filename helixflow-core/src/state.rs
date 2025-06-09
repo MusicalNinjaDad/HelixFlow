@@ -6,7 +6,6 @@ use crate::{HelixFlowItem, task::TaskList};
 
 /// The UI State. Uses builder pattern...
 #[derive(Debug, Default, PartialEq, Clone)]
-#[non_exhaustive]
 pub struct State {
     visible_backlog: Option<Uuid>,
     id: Uuid,
