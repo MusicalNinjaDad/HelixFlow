@@ -301,8 +301,20 @@ impl<C: Connection> Store<State> for SurrealDb<C> {
         dbg!(&checkitem);
         Ok(checkitem)
     }
+
     fn get(&self, id: &Uuid) -> HelixFlowResult<State> {
-        todo!()
+        let dbstate: Option<SurrealState> = self
+            .rt
+            .block_on(self.db.select(("State", *id)).into_future())
+            .map_err(anyhow::Error::from)?;
+        if let Some(state) = dbstate {
+            Ok(state.try_into()?)
+        } else {
+            Err(HelixFlowError::NotFound {
+                itemtype: "State".into(),
+                id: *id,
+            })
+        }
     }
 }
 
