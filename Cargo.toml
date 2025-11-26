@@ -12,7 +12,7 @@ helixflow-surreal = { path = "backends/helixflow-surreal" }
 anyhow = "1.0.98"
 log = "0.4.27"
 serde = { version = "1.0.219" }
-slint = { git = "https://github.com/slint-ui/slint", features = ["backend-winit-wayland"] }
+slint = { version = "1.14.1", features = ["backend-winit-wayland"] }
 surrealdb = { version = "2.3.3", features = ["kv-mem"] }
 thiserror = "2.0.12"
 tokio = { version = "1.44.2" }
@@ -20,9 +20,9 @@ uuid = { version = "1.16.0", features = ["v7", "js"] }
 
 # dev-only dependencies
 assert_unordered = "0.3.5"
-i-slint-backend-testing = { git = "https://github.com/slint-ui/slint" }
+i-slint-backend-testing = { version = "1.14.1" }
 rstest = "0.25.0"
 tempfile = "3.20.0"
 
 # build dependencies
-slint-build = { git = "https://github.com/slint-ui/slint" }
+slint-build = { version = "1.14.1" }

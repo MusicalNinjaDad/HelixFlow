@@ -1,7 +1,6 @@
 //! Test calling Task::CRUD_fn(&SurrealDb) ...
 
 #![feature(assert_matches)]
-#![feature(cfg_boolean_literals)]
 #![cfg(false)]
 #![cfg(test)]
 

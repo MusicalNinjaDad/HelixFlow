@@ -1,6 +1,5 @@
 #![feature(assert_matches)]
 #![feature(coverage_attribute)]
-#![feature(let_chains)]
 //! Functionality to utilise a [`SurrealDb`](https://surrealdb.com) backend.
 
 use std::{borrow::Cow, path::PathBuf, rc::Rc};
