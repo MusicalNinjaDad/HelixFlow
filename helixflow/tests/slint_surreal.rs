@@ -1,5 +1,3 @@
-#![feature(cfg_boolean_literals)]
-
 use std::rc::Rc;
 
 use helixflow_core::state::State;

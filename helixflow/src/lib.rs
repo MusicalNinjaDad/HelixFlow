@@ -1,5 +1,5 @@
 #![feature(coverage_attribute)]
-#![feature(if_let_guard, let_chains)]
+#![feature(if_let_guard)]
 #![coverage(off)]
 use std::{path::PathBuf, rc::Rc};
 
