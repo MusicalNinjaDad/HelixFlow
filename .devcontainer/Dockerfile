@@ -1,4 +1,4 @@
-FROM fedora:latest@sha256:16ca3e34a9545583551589e71882f1f27cbce3c2f1fc6210c932d22a6931b73b
+FROM fedora:latest@sha256:aa7befe5cfd1f0e062728c16453cd1c479d4134c7b85eac00172f3025ab0d522
 
 # ---
 # Setup base system ...
